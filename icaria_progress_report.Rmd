@@ -1,0 +1,25 @@
+```{r parameters, include=FALSE}
+source("icaria_progress.R")
+source("tokens.R")
+
+report.date <- Sys.time()
+```
+---
+title: "ICARIA Progress Report"
+author: "Máximo Ramírez Robles"
+date: `r report.date`
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# data <-
+```
+
+```{r out.width="30px", echo=FALSE}
+knitr::include_graphics("github_icon.png")
+```
+[Report GitHub Repository](https://github.com/maxramirez84/r_icaria_progress_report)
+
+## Trial Health Facilities Status
