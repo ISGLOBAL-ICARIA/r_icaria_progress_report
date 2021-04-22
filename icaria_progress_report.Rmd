@@ -14,7 +14,15 @@ output: html_document
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
-# data <-
+# Export data from all REDCap projects (one project by health facility)
+data <- data.frame()
+for (hf in names(kRedcapTokens)) {
+  print(paste("Extracting data from", hf))
+  #browser()
+  hf.data <- ReadData(kRedcapAPIURL, kRedcapTokens[[hf]])
+  hf.data <- cbind(hf = hf, hf.data)
+  data <- rbind(data, hf.data)
+}
 ```
 
 ```{r out.width="30px", echo=FALSE}
