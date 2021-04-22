@@ -1,14 +1,20 @@
+---
+output: 
+  html_document: 
+    css: style.css
+---
+
 ```{r parameters, include=FALSE}
 source("icaria_progress.R")
 source("tokens.R")
 
 report.date <- Sys.time()
 ```
+
 ---
 title: "ICARIA Progress Report"
 author: "Máximo Ramírez Robles"
 date: `r report.date`
-output: html_document
 ---
 
 ```{r setup, include=FALSE}
