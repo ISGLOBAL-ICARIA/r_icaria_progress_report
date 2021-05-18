@@ -23,11 +23,13 @@ knitr::opts_chunk$set(echo = TRUE)
 # Export data from all REDCap projects (one project by health facility)
 data <- data.frame()
 for (hf in names(kRedcapTokens)) {
-  print(paste("Extracting data from", hf))
-  #browser()
-  hf.data <- ReadData(kRedcapAPIURL, kRedcapTokens[[hf]])
-  hf.data <- cbind(hf = hf, hf.data)
-  data <- rbind(data, hf.data)
+  browser()
+  if (hf != "profile") {
+    print(paste("Extracting data from", hf))
+    hf.data <- ReadData(kRedcapAPIURL, kRedcapTokens[[hf]])
+    hf.data <- cbind(hf = hf, hf.data)
+    data <- rbind(data, hf.data)
+  }
 }
 ```
 
