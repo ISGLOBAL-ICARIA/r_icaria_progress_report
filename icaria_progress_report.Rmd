@@ -9,6 +9,10 @@ source("icaria_progress.R")
 source("tokens.R")
 
 report.date <- Sys.time()
+
+# TODO: Implement the possibility to get the report for a concrete date
+filter.by.date <- T
+date.filter <- "2021-04-29 10:19:27"
 ```
 
 ---
@@ -20,10 +24,24 @@ date: `r report.date`
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 
+# Define set of health facilities
+hfs <- data.frame(
+  code     = c("hf01", "hf02", "hf03", "hf05", "hf08", "hf10", "hf11", "hf12", 
+               "hf13", "hf15", "hf16"),
+  name     = c("Lungi Under Fives CHP", "Lunsar CHC", "Mahera CHC", 
+               "Port Loko U5 CHP", "Magburaka Under Fives Clinic", 
+               "Matotoka CHC", "Loreto Clinic", "Red Cross (Makeni City) CHP", 
+               "Stocco CHP", "Makama CHP", "Makeni Government Hospital"),
+  district = c("Port Loko", "Port Loko", "Port Loko", "Port Loko", "Tonkolili",
+               "Tonkolili", "Bombali", "Bombali", "Bombali", "Bombali", 
+               "Bombali")
+)
+row.names(hfs) <- c(1, 2, 3, 5, 8, 10, 11, 12, 13, 15, 16)
+
 # Export data from all REDCap projects (one project by health facility)
 data <- data.frame()
 for (hf in names(kRedcapTokens)) {
-  browser()
+  #browser()
   if (hf != "profile") {
     print(paste("Extracting data from", hf))
     hf.data <- ReadData(kRedcapAPIURL, kRedcapTokens[[hf]])
@@ -31,6 +49,13 @@ for (hf in names(kRedcapTokens)) {
     data <- rbind(data, hf.data)
   }
 }
+
+# Export data from trial profile (data recorded on the screening log): penta1,
+# approached, underweight and refusals
+print("Extracting data from profile")
+profile <- ReadData(kRedcapAPIURL, kRedcapTokens[['profile']])
+
+sum.data <- SummarizeData(row.names(hfs), profile, data)
 ```
 
 ```{r out.width="30px", echo=FALSE}
