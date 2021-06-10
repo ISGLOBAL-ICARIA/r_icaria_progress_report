@@ -10,20 +10,6 @@ source("tokens.R")
 
 report.date <- Sys.time()
 
-# TODO: Implement the possibility to get the report for a concrete date
-filter.by.date <- T
-date.filter <- "2021-04-29 10:19:27"
-```
-
----
-title: "ICARIA Progress Report"
-author: "Máximo Ramírez Robles"
-date: `r report.date`
----
-
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-
 # Define set of health facilities
 hfs <- data.frame(
   code     = c("hf01", "hf02", "hf03", "hf05", "hf08", "hf10", "hf11", "hf12", 
@@ -38,22 +24,25 @@ hfs <- data.frame(
 )
 row.names(hfs) <- c(1, 2, 3, 5, 8, 10, 11, 12, 13, 15, 16)
 
-# Export data from all REDCap projects (one project by health facility)
-data <- data.frame()
-for (hf in names(kRedcapTokens)) {
-  #browser()
-  if (hf != "profile") {
-    print(paste("Extracting data from", hf))
-    hf.data <- ReadData(kRedcapAPIURL, kRedcapTokens[[hf]])
-    hf.data <- cbind(hf = hf, hf.data)
-    data <- rbind(data, hf.data)
-  }
-}
+# TODO: Implement the possibility to get the report for a concrete date
+filter.by.date <- T
+date.filter <- "2021-04-29 10:19:27"
+```
 
-# Export data from trial profile (data recorded on the screening log): penta1,
-# approached, underweight and refusals
-print("Extracting data from profile")
-profile <- ReadData(kRedcapAPIURL, kRedcapTokens[['profile']])
+---
+title: "ICARIA Progress Report"
+author: "Máximo Ramírez Robles"
+date: `r report.date`
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+# Export data from all REDCap projects (one project by health facility)
+data <- ExportDataAllHealthFacilities(kRedcapAPIURL, kRedcapTokens)
+
+# Export data from trial profile (data recorded on the screening log)
+profile <- ExportDataTrialProfile(kRedcapAPIURL, kRedcapTokens)
 
 sum.data <- SummarizeData(row.names(hfs), profile, data)
 ```
