@@ -52,11 +52,24 @@ ExportDataTrialProfile <- function(redcap.api.url, redcap.tokens) {
 }
 
 SummarizeData <- function(hf.list, profile, data) {
+  # Compute the data frame to produce the general progress table.
+  #
+  # Args:
+  #   hf.list: List of ICARIA health facilities IDs (integers) to be summarized.
+  #   profile: Data frame containing the trial profile data extracted from the 
+  #            ICARIA Trial Profile REDCap project.
+  #   data:    Data frame containing the CRF data extracted from the ICARIA 
+  #            REDCap projects.
+  # 
+  # Returns:
+  #   Data frame with all the indicators by health facility to produce the 
+  #   general progress table of the report.
+  
   profile.sum <- SummarizeProfileData(hf.list, profile)
   crf.sum <- SummarizeCRFData(hf.list, data)
   
   summary <- cbind(profile.sum, crf.sum[, -1]) 
-  browser()
+  
   return(summary)
 }
 
