@@ -1,4 +1,5 @@
 library(redcapAPI)
+library(xlsx)
 
 ReadData <- function(api.url, api.token) {
   #browser()
@@ -68,7 +69,10 @@ SummarizeData <- function(hf.list, profile, data) {
   profile.sum <- SummarizeProfileData(hf.list, profile)
   crf.sum <- SummarizeCRFData(hf.list, data)
   
-  summary <- cbind(profile.sum, crf.sum[, -1]) 
+  # Merge both data frames and convert all columns to the same type: numeric
+  summary <- data.frame(profile.sum, crf.sum[, -1])
+  summary$hf.list <- as.character(summary$hf.list)  # Remove factors
+  summary <- as.data.frame(lapply(summary, as.numeric))
   
   return(summary)
 }
@@ -292,4 +296,70 @@ SummarizeCRFData <- function(hf.list, data) {
   colnames(summary) <- var.names
   
   return(summary)
+}
+
+PreVisualizationProcess <- function(df, columns.remove.if.zero) {
+  # Process data frame before visualizing it.
+  #
+  # Args:
+  #   columns.remove.if.zero: List of data frame columns to be removed if all
+  #                           the values are zero.
+  # 
+  # Returns:
+  #   Data frame processed and ready for viasualization
+  
+  for (column in columns.remove.if.zero) {
+    if (sum(df[column]) == 0) {
+      df[column] <- NULL  
+    }
+  }
+  
+  return(df)
+}
+
+CreateExcelReport <- function(filename, general.progress, health.facilities) {
+  
+  # Set districts and health facility names
+  general.progress$hf.list <- paste(health.facilities$code, 
+                                    health.facilities$name)
+  general.progress <- cbind(health.facilities$district, general.progress)
+  
+  # Set column names
+  colnames(general.progress) <- c("District", "Health Facility", "Penta1", 
+                                  "Approached", "Underweight", "Over Age", 
+                                  "Refusals", "ICF Signed (LOG)", 
+                                  "ICF Signed (CRF)", "Screening Failures", 
+                                  "More than 10w", "No Penta1", "Less than 4kg",
+                                  "Catchment Area", "Other Study", "Allergy", 
+                                  "Disease", "Illness", "Randomized", 
+                                  "AZi/Pbo1", "AZi/Pbo2", "AZi/Pbo3", 
+                                  "Non-Compliants", "Withdrawals", 
+                                  "Parent Request", "Investigator", "Migration",
+                                  "Other", "Deaths")
+  
+  # Process data frame for visualization: (1) Remove failure and withdrawal
+  # reason columns if zero
+  columns.can.be.hidden <- c("More than 10w", "No Penta1", "Less than 4kg", 
+                             "Catchment Area", "Other Study", "Allergy", 
+                             "Disease", "Illness", "Parent Request",
+                             "Investigator", "Migration", "Other")
+  general.progress <- PreVisualizationProcess(general.progress, 
+                                              columns.can.be.hidden)
+  
+  # Create Excel Work Book
+  wb <- createWorkbook(type = "xlsx")
+  
+  # Create first Excel sheet called Overview containing the ICARIA TRIAL and
+  # COHORT general progress by Health Facility
+  overview.sheet <- createSheet(wb, "Overview")
+  addDataFrame(
+    x           = general.progress, 
+    sheet       = overview.sheet, 
+    startColumn = 1,
+    startRow    = 2,
+    row.names   = F
+  )
+  
+  # Save Excel Work Book
+  saveWorkbook(wb, filename)
 }
