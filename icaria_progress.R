@@ -324,10 +324,13 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
   kNormalColumn <- 11
   kWideColumn   <- 36
   kSmallFont    <- 10
+  kTinyFont     <- 9
   
   # Colors
-  kHEXDarkBlue <- "#44546A"
-  kINDWhite <- 9
+  kHEXDarkBlue      <- "#44546A"
+  kHEXBlueGrayLight <- "#E6EEFA"
+  kHEXBlueGrayDark  <- "#D6E2F6"
+  kINDWhite         <- 9
   
   # Set districts and health facility names
   general.progress$hf.list <- NULL
@@ -385,6 +388,26 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
     font      = header.font
   )
   
+  subcolumn.background.main <- Fill(
+    backgroundColor = kHEXBlueGrayDark, 
+    foregroundColor = kHEXBlueGrayDark,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  subcolumn.background <- Fill(
+    backgroundColor = kHEXBlueGrayLight, 
+    foregroundColor = kHEXBlueGrayLight,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  subcolumn.font <- Font(
+    wb             = wb, 
+    heightInPoints = kTinyFont,
+    isItalic       = T
+  )
+  table.subcolumn <- CellStyle(
+    wb        = wb,
+    fill      = subcolumn.background.main
+  )
+  
   # Create first Excel sheet called Overview containing the ICARIA TRIAL and
   # COHORT general progress by Health Facility
   overview.sheet <- createSheet(wb, "Overview")
@@ -400,7 +423,14 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
     startColumn   = 1,
     startRow      = 2,
     colnamesStyle = table.header,
-    rownamesStyle = table.header + left.align
+    rownamesStyle = table.header + left.align,
+    colStyle      = list(
+      '8'  = table.subcolumn,
+      '9'  = table.subcolumn + subcolumn.background + subcolumn.font, 
+      '10' = table.subcolumn + subcolumn.background + subcolumn.font,
+      '11' = table.subcolumn + subcolumn.background + subcolumn.font,
+      '17' = table.subcolumn,
+      '18' = table.subcolumn + subcolumn.background + subcolumn.font)
   )
   
   # Save Excel Work Book
