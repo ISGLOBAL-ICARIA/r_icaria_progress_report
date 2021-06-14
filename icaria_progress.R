@@ -319,15 +319,25 @@ PreVisualizationProcess <- function(df, columns.remove.if.zero) {
 
 CreateExcelReport <- function(filename, general.progress, health.facilities) {
   
+  # Sizes
+  kNarrowColumn <- 9
+  kNormalColumn <- 11
+  kWideColumn   <- 36
+  kSmallFont    <- 10
+  
+  # Colors
+  kHEXDarkBlue <- "#44546A"
+  kINDWhite <- 9
+  
   # Set districts and health facility names
-  general.progress$hf.list <- paste(health.facilities$code, 
-                                    health.facilities$name)
-  general.progress <- cbind(health.facilities$district, general.progress)
+  general.progress$hf.list <- NULL
+  rownames(general.progress) <- paste(health.facilities$district, 
+                                      health.facilities$code, 
+                                      health.facilities$name)
   
   # Set column names
-  colnames(general.progress) <- c("District", "Health Facility", "Penta1", 
-                                  "Approached", "Underweight", "Over Age", 
-                                  "Refusals", "ICF Signed (LOG)", 
+  colnames(general.progress) <- c("Penta1", "Approached", "Underweight", 
+                                  "Over Age", "Refusals", "ICF Signed (LOG)", 
                                   "ICF Signed (CRF)", "Screening Failures", 
                                   "More than 10w", "No Penta1", "Less than 4kg",
                                   "Catchment Area", "Other Study", "Allergy", 
@@ -349,15 +359,48 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
   # Create Excel Work Book
   wb <- createWorkbook(type = "xlsx")
   
+  # Workbook styles
+  right.align <- Alignment(
+    h        = "ALIGN_RIGHT", 
+    wrapText = T
+  )
+  left.align <- Alignment(
+    h        = "ALIGN_LEFT"
+  )
+  header.background <- Fill(
+    backgroundColor = kHEXDarkBlue, 
+    foregroundColor = kHEXDarkBlue,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  header.font <- Font(
+    wb             = wb, 
+    color          = kINDWhite, 
+    isBold         = T,
+    heightInPoints = kSmallFont
+  )
+  table.header <- CellStyle(
+    wb        = wb,
+    alignment = right.align,
+    fill      = header.background,
+    font      = header.font
+  )
+  
   # Create first Excel sheet called Overview containing the ICARIA TRIAL and
   # COHORT general progress by Health Facility
   overview.sheet <- createSheet(wb, "Overview")
+  
+  # Set columns widths
+  setColumnWidth(overview.sheet, 1, kWideColumn)    # District + HF column
+  setColumnWidth(overview.sheet, 2:21, kNormalColumn) # Indicators
+  
+  # Add ICARIA TRIAL general progress table
   addDataFrame(
-    x           = general.progress, 
-    sheet       = overview.sheet, 
-    startColumn = 1,
-    startRow    = 2,
-    row.names   = F
+    x             = general.progress, 
+    sheet         = overview.sheet, 
+    startColumn   = 1,
+    startRow      = 2,
+    colnamesStyle = table.header,
+    rownamesStyle = table.header + left.align
   )
   
   # Save Excel Work Book
