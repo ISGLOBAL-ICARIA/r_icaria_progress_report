@@ -58,7 +58,7 @@ profile <- ExportDataTrialProfile(kRedcapAPIURL, kRedcapTokens)
 sum.data <- SummarizeData(row.names(hfs), profile, data)
 
 # Produce Excel report
-CreateExcelReport(excel.report.filename, sum.data, hfs)
+CreateExcelReport(excel.report.filename, report.date, sum.data, hfs)
 ```
 
 ```{r out.width="30px", echo=FALSE}

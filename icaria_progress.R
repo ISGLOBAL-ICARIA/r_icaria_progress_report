@@ -317,7 +317,8 @@ PreVisualizationProcess <- function(df, columns.remove.if.zero) {
   return(df)
 }
 
-CreateExcelReport <- function(filename, general.progress, health.facilities) {
+CreateExcelReport <- function(filename, report.date, general.progress, 
+                              health.facilities) {
   
   # Sizes
   kNarrowColumn <- 9
@@ -434,8 +435,14 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
   overview.sheet <- createSheet(wb, "Overview")
   
   # Set columns widths
-  setColumnWidth(overview.sheet, 1, kWideColumn)    # District + HF column
+  setColumnWidth(overview.sheet, 1, kWideColumn)      # District + HF column
   setColumnWidth(overview.sheet, 2:21, kNormalColumn) # Indicators
+  
+  # Add report date
+  row <- createRow(overview.sheet, rowIndex = 1)
+  cell <- createCell(row, colIndex = 1)[[1]]
+  date <- format(report.date, format = "%Y%m%d %H:%M")
+  setCellValue(cell, paste("Report Date:", date))
   
   # Add ICARIA TRIAL general progress table
   addDataFrame(
