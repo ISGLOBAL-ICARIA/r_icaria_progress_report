@@ -1,5 +1,31 @@
 library(redcapAPI)
 library(xlsx)
+library(lubridate)
+
+kCRFAZiEvents <- c(
+  'epipenta1_v0_recru_arm_1',  # EPI-Penta1 V0 Recruit AZi/Pbo1
+  'epimvr1_v4_iptisp4_arm_1',  # EPI-MVR1 V4 IPTi-SP4 AZi/Pbo2
+  'epimvr2_v6_iptisp6_arm_1'   # EPI-MVR2 V6 IPTi-SP6 AZi/Pbo3
+)
+kCRFHHEvent <- c(
+  'hhafter_1st_dose_o_arm_1',  # HH-After 1st dose of AZi/Pbo
+  'hhafter_2nd_dose_o_arm_1',  # HH-After 2nd dose of AZi/Pbo
+  'hhafter_3rd_dose_o_arm_1',  # HH-After 3rd dose of AZi/Pbo
+  'hhat_18th_month_of_arm_1'   # HH-At 18th month of age
+)
+kCRFEvents <- c(
+  kCRFAZiEvents[1],            # EPI-Penta1 V0 Recruit AZi/Pbo1
+  kCRFHHEvent[1],              # HH-After 1st dose of AZi/Pbo
+  'epipenta2_v1_iptis_arm_1',  # EPI-Penta2 V1 IPTi-SP1
+  'epipenta3_v2_iptis_arm_1',  # EPI-Penta3 V2 IPTi-SP2
+  'epivita_v3_iptisp3_arm_1',  # EPI-VitA V3 IPTi-SP3
+  kCRFAZiEvents[2],            # EPI-MVR1 V4 IPTi-SP4 AZi/Pbo2
+  kCRFHHEvent[2],              # HH-After 2nd dose of AZi/Pbo
+  'epivita_v5_iptisp5_arm_1',  # EPI-VitA V5 IPTi-SP5
+  kCRFAZiEvents[3],            # EPI-MVR2 V6 IPTi-SP6 AZi/Pbo3
+  kCRFHHEvent[3],              # HH-After 3rd dose of AZi/Pbo
+  kCRFHHEvent[4]               # HH-At 18th month of age 
+)
 
 ReadData <- function(api.url, api.token) {
   #browser()
@@ -137,7 +163,7 @@ SummarizeProfileData <- function(hf.list, profile) {
   return(summary)
 }
 
-CountNumberOfResponses <- function(data, var, val, event = NULL) {
+CountNumberOfResponses <- function(data, var, val, event = NULL, by.hf = T) {
   # Count number of concrete responses in a concrete variable either generally
   # or by REDCap event and by ICARIA Health Facility.
   #
@@ -148,15 +174,24 @@ CountNumberOfResponses <- function(data, var, val, event = NULL) {
   #   val:   String represeting the reponse value to count.
   #   event: String representing the REDCap event to filter by when counting 
   #          responses.
+  #   by.hf: True/False if result must be disaggregated by ICARIA Health 
+  #          Facility or not.
   # 
   # Returns:
   #   List of occurences by ICARIA Health Facility.
+  
   if (is.null(event)){
     condition <- which(data[var] == val)
   } else {
     condition <- which(data['redcap_event_name'] == event & data[var] == val)
   }
-  col <- table(data[condition, c('hf', var)])
+  
+  if (by.hf) {
+    col <- table(data[condition, c('hf', var)])
+  } else {
+    col <- table(data[condition, var])
+  }
+  
   if (length(col) == 0)
     return(0)  
   
@@ -206,10 +241,6 @@ SummarizeCRFData <- function(hf.list, data) {
   # Returns:
   #   Data frame with one row per health facility and one column per variable to
   #   be summarized.
-  
-  # CRF events
-  crf.azi.events <- c('epipenta1_v0_recru_arm_1', 'epimvr1_v4_iptisp4_arm_1',
-                      'epimvr2_v6_iptisp6_arm_1')
   
   # CRF variables (equal to 0) to be summarized
   vars.to.0 <- c('ic_age_10w', 'ic_age', 'ic_weight', 'ic_residency_now', 
@@ -265,7 +296,7 @@ SummarizeCRFData <- function(hf.list, data) {
   
   # Summarize CRF variables by event in which the value of interest is 1
   for (var in vars.to.1.event) {
-    for (event in crf.azi.events) {
+    for (event in kCRFAZiEvents) {
       column.name <- paste(event, var, "1", sep = "_")
       summary[column.name] <- CountNumberOfResponses(data, var, 1, event)  
     }
@@ -296,6 +327,79 @@ SummarizeCRFData <- function(hf.list, data) {
   colnames(summary) <- var.names
   
   return(summary)
+}
+
+NextWeekDay <- function(date, week.day) {
+  date <- as.Date(date)
+  diff <- week.day - wday(date)
+  
+  if( diff < 0 ) {
+    diff <- diff + 7
+  }
+  return(date + diff)
+}
+
+GetHealthFacilityTimeSeries <- function(hf.data, precision = "w") {
+  #   (1)  n_random:     Number of randomized participants
+  #   (2)  n_in_mig:     Number of in-migrated participants
+  #   (3)  n_out_mig:    Number of out-migrated participants
+  #   (4)  n_azi1:       Number of 1st AZi/Pbo doses already administered
+  #   (5)  n_hh1:        Number of household visits already performed for AZi1
+  #   (6)  n_penta2:     Number of participants who came for Penta2
+  #   (7)  n_penta3:     Number of participants who came for Penta3
+  #   (8)  n_vit_a1:     Number of participants who came for 1st Vitamin A dose
+  #   (9)  n_azi2:       Number of 2nd AZi/Pbo doses already administered
+  #   (10) n_hh2:        Number of household visits already performed for AZi2
+  #   (11) n_vit_a2:     Number of participants who came for 2nd Vitamin A dose
+  #   (12) n_azi3:       Number of 3rd AZi/Pbo doses already administered
+  #   (13) n_hh3:        Number of household visits already performed for AZi3
+  #   (14) n_end_fu:     Number of participants who completed follow up
+  #   (15) n_wdw:        Number of total study withdrawals
+  #   (16) n_deaths:     Number of participants who die
+  browser()
+  time.series <- data.frame()
+  
+  week.day <- 2 # First Monday 00:00 after starting
+  start.date <- min(hf.data$screening_date, na.rm = T)
+  until.date <- max(hf.data$screening_date, na.rm = T)
+  time.point <- NextWeekDay(start.date, week.day) 
+  
+  while (time.point <= until.date) {
+    point <- list()
+    point['date'] <- as.character.Date(time.point)
+    point['n_random'] <- CountNumberOfResponses(
+      data  =  hf.data[which(hf.data$screening_date < time.point), ], 
+      var   = "eligible", 
+      val   = 1, 
+      by.hf = F
+    )
+    point['n_azi1'] <- CountNumberOfResponses(
+      data  =  hf.data[which(hf.data$int_date < time.point), ], 
+      var   = "int_azi", 
+      val   = 1, 
+      event = kCRFAZiEvents[1], 
+      by.hf = F
+    )
+    point['n_hh1'] <- CountNumberOfResponses(
+      data  =  hf.data[which(hf.data$hh_date < time.point), ],
+      var   = "hh_child_seen",
+      val   = 1,
+      event = kCRFHHEvent[1],
+      by.hf = F
+    )
+    point['n_penta2'] <- CountNumberOfResponses(
+      data = hf.data[which(hf.data$int_date < time.point), ],
+      var  = "intervention_complete",
+      val  = 2,
+      event = kCRFEvents[3],
+      by.hf = F
+    )
+    
+    time.series <- rbind(time.series, point, stringsAsFactors = F)
+    time.point <- NextWeekDay(time.point + 1, week.day)
+  }
+  
+  return(time.series)
 }
 
 PreVisualizationProcess <- function(df, columns.remove.if.zero) {
