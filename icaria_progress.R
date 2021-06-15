@@ -330,6 +330,7 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
   kHEXDarkBlue      <- "#44546A"
   kHEXBlueGrayLight <- "#E6EEFA"
   kHEXBlueGrayDark  <- "#D6E2F6"
+  kHEXGray          <- "#E7E6E6"
   kINDWhite         <- 9
   
   # Set districts and health facility names
@@ -349,6 +350,11 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
                                   "Non-Compliants", "Withdrawals", 
                                   "Parent Request", "Investigator", "Migration",
                                   "Other", "Deaths")
+  
+  # Create the totals row
+  general.progress <- rbind(general.progress, colSums(general.progress))
+  last.row <- nrow(general.progress)
+  rownames(general.progress)[last.row] <- "Total"
   
   # Process data frame for visualization: (1) Remove failure and withdrawal
   # reason columns if zero
@@ -408,6 +414,21 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
     fill      = subcolumn.background.main
   )
   
+  totals.background <- Fill(
+    backgroundColor = kHEXGray, 
+    foregroundColor = kHEXGray,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  totals.font <- Font(
+    wb     = wb, 
+    isBold = T
+  )
+  table.totals <- CellStyle(
+    wb   = wb,
+    fill = totals.background,
+    font = totals.font
+  )
+  
   # Create first Excel sheet called Overview containing the ICARIA TRIAL and
   # COHORT general progress by Health Facility
   overview.sheet <- createSheet(wb, "Overview")
@@ -418,7 +439,7 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
   
   # Add ICARIA TRIAL general progress table
   addDataFrame(
-    x             = general.progress, 
+    x             = general.progress[-last.row, ], 
     sheet         = overview.sheet, 
     startColumn   = 1,
     startRow      = 2,
@@ -431,6 +452,21 @@ CreateExcelReport <- function(filename, general.progress, health.facilities) {
       '11' = table.subcolumn + subcolumn.background + subcolumn.font,
       '17' = table.subcolumn,
       '18' = table.subcolumn + subcolumn.background + subcolumn.font)
+  )
+  
+  # Add Totals row at the bottom of the table as an independent data frame to
+  # control de style
+  col.style <- rep(list(table.totals), ncol(general.progress))
+  names(col.style) <- seq(1, ncol(general.progress), by = 1)
+  
+  addDataFrame(
+    x = general.progress[last.row, ],
+    sheet = overview.sheet,
+    startColumn = 1,
+    startRow = nrow(general.progress) + 2,
+    col.names = F,
+    rownamesStyle = table.header,
+    colStyle = col.style
   )
   
   # Save Excel Work Book
