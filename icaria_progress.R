@@ -330,6 +330,18 @@ SummarizeCRFData <- function(hf.list, data) {
 }
 
 NextWeekDay <- function(date, week.day) {
+  # Compute the date of the requested next week day since the provided date.
+  #
+  # Args:
+  #   date:     Date from which the date of the next day of the week will be 
+  #             calculated.
+  #   week.day: Integer representing the next day of the week (1 = Sunday, 
+  #             2 = Monday, 3 = Tuesday, 4 = Wednesday, 5 = Thursday, 6 = Friday 
+  #             and 7 = Saturday)
+  # 
+  # Returns:
+  #   Date of the requested next week day since the provided date.
+  
   date <- as.Date(date)
   diff <- week.day - wday(date)
   
