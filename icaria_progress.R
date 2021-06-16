@@ -533,7 +533,7 @@ PreVisualizationProcess <- function(df, columns.remove.if.zero) {
 }
 
 CreateExcelReport <- function(filename, report.date, general.progress, 
-                              health.facilities) {
+                              time.series, health.facilities) {
   
   # Sizes
   kNarrowColumn <- 9
@@ -645,6 +645,11 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     font = totals.font
   )
   
+  time.points <- CellStyle(
+    wb = wb,
+    fill = totals.background
+  )
+  
   # Create first Excel sheet called Overview containing the ICARIA TRIAL and
   # COHORT general progress by Health Facility
   overview.sheet <- createSheet(wb, "Overview")
@@ -664,7 +669,7 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     x             = general.progress[-last.row, ], 
     sheet         = overview.sheet, 
     startColumn   = 1,
-    startRow      = 2,
+    startRow      = 3,
     colnamesStyle = table.header,
     rownamesStyle = table.header + left.align,
     colStyle      = list(
@@ -685,11 +690,51 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     x = general.progress[last.row, ],
     sheet = overview.sheet,
     startColumn = 1,
-    startRow = nrow(general.progress) + 2,
+    startRow = nrow(general.progress) + 3,
     col.names = F,
     rownamesStyle = table.header,
     colStyle = col.style
   )
+  
+  # Create one Excel sheet per Health Facility containing the progress in time
+  for (hf.id in names(time.series)) {
+    # Set row names as date points
+    series <- time.series[[hf.id]]
+    row.names(series) <- series$date
+    series$date <- NULL
+    
+    # Set column names
+    colnames(series) <- c("Randomized", "IN Migrated", "OUT Migrated", 
+                          "Penta1-AZi/Pbo", "HH-Visit1", "Penta2", "Penta3", 
+                          "VitA", "MVR1-AZi/Pbo", "HH-Visit2", "VitA", 
+                          "MVR2-AZi/Pbo", "HH-Visit3", "HH-Visit END F/U", 
+                          "Withdrawals", "Deaths")
+    
+    # Create new sheet for the Health Facility
+    sheet.name <- as.character(health.facilities[hf.id, 'code'])
+    time.series.sheet <- createSheet(wb, sheet.name)
+    
+    # Set columns widths
+    setColumnWidth(time.series.sheet, 1:17, kNormalColumn) # Indicators
+    
+    # Add Helath Facility details
+    row <- createRow(time.series.sheet, rowIndex = 1)
+    cell <- createCell(row, colIndex = 1)[[1]]
+    hf.details <- paste(health.facilities[hf.id, 'district'], 
+                        health.facilities[hf.id, 'code'], 
+                        health.facilities[hf.id, 'name'])
+    setCellValue(cell, hf.details)
+    
+    # Add ICARIA Health Facility time progress table
+    addDataFrame(
+      x             = series, 
+      sheet         = time.series.sheet, 
+      startColumn   = 1,
+      startRow      = 3,
+      colnamesStyle = table.header,
+      rownamesStyle = time.points
+    )
+  }
   
   # Save Excel Work Book
   saveWorkbook(wb, filename)

@@ -70,7 +70,13 @@ for (hf.id in row.names(hfs)) {
 }
 
 # Produce Excel report
-CreateExcelReport(excel.report.filename, report.date, sum.data, hfs)
+CreateExcelReport(
+  filename          = excel.report.filename, 
+  report.date       = report.date, 
+  general.progress  = sum.data, 
+  time.series       = time.series, 
+  health.facilities = hfs
+)
 ```
 
 ```{r out.width="30px", echo=FALSE}
