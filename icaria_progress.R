@@ -13,18 +13,24 @@ kCRFHHEvent <- c(
   'hhafter_3rd_dose_o_arm_1',  # HH-After 3rd dose of AZi/Pbo
   'hhat_18th_month_of_arm_1'   # HH-At 18th month of age
 )
+kCRFNonAZiEvents <- c(
+  'epipenta2_v1_iptis_arm_1',  # 3  EPI-Penta2 V1 IPTi-SP1
+  'epipenta3_v2_iptis_arm_1',  # 4  EPI-Penta3 V2 IPTi-SP2
+  'epivita_v3_iptisp3_arm_1',  # 5  EPI-VitA V3 IPTi-SP3
+  'epivita_v5_iptisp5_arm_1'   # 8  EPI-VitA V5 IPTi-SP5
+)
 kCRFEvents <- c(
-  kCRFAZiEvents[1],            # EPI-Penta1 V0 Recruit AZi/Pbo1
-  kCRFHHEvent[1],              # HH-After 1st dose of AZi/Pbo
-  'epipenta2_v1_iptis_arm_1',  # EPI-Penta2 V1 IPTi-SP1
-  'epipenta3_v2_iptis_arm_1',  # EPI-Penta3 V2 IPTi-SP2
-  'epivita_v3_iptisp3_arm_1',  # EPI-VitA V3 IPTi-SP3
-  kCRFAZiEvents[2],            # EPI-MVR1 V4 IPTi-SP4 AZi/Pbo2
-  kCRFHHEvent[2],              # HH-After 2nd dose of AZi/Pbo
-  'epivita_v5_iptisp5_arm_1',  # EPI-VitA V5 IPTi-SP5
-  kCRFAZiEvents[3],            # EPI-MVR2 V6 IPTi-SP6 AZi/Pbo3
-  kCRFHHEvent[3],              # HH-After 3rd dose of AZi/Pbo
-  kCRFHHEvent[4]               # HH-At 18th month of age 
+  kCRFAZiEvents[1],
+  kCRFHHEvent[1],
+  kCRFNonAZiEvents[1],
+  kCRFNonAZiEvents[2],
+  kCRFNonAZiEvents[3],
+  kCRFAZiEvents[2],
+  kCRFHHEvent[2],
+  kCRFNonAZiEvents[4],
+  kCRFAZiEvents[3],
+  kCRFHHEvent[3],
+  kCRFHHEvent[4]
 )
 
 ReadData <- function(api.url, api.token) {
@@ -179,6 +185,9 @@ CountNumberOfResponses <- function(data, var, val, event = NULL, by.hf = T) {
   # 
   # Returns:
   #   List of occurences by ICARIA Health Facility.
+  
+  if (nrow(data) == 0)
+    return(0)
   
   if (is.null(event)){
     condition <- which(data[var] == val)
@@ -351,7 +360,11 @@ NextWeekDay <- function(date, week.day) {
   return(date + diff)
 }
 
-GetHealthFacilityTimeSeries <- function(hf.data, precision = "w") {
+GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date, 
+                                        precision = "w") {
+  # Compute and returns the status of the recruitment progress variables in a 
+  # time series fashion for concrete ICARIA Health Facility. These variables 
+  # are:
   #   (1)  n_random:     Number of randomized participants
   #   (2)  n_in_mig:     Number of in-migrated participants
   #   (3)  n_out_mig:    Number of out-migrated participants
@@ -368,48 +381,134 @@ GetHealthFacilityTimeSeries <- function(hf.data, precision = "w") {
   #   (14) n_end_fu:     Number of participants who completed follow up
   #   (15) n_wdw:        Number of total study withdrawals
   #   (16) n_deaths:     Number of participants who die
-  browser()
+  #
+  # Args:
+  #   hf.id:       Integer representing the ID of the ICARIA Health Facility.
+  #   hf.data:     Data frame containing the Health Facility data set extracted 
+  #                from the corresponding ICARIA REDCap project.
+  #   report.date: Date until the time series has to be reported.
+  #   precision:   Character indicating the precision of the time series 
+  #                (d = daily, w = weekly, m = monthy, y = yearly)
+  # 
+  # Returns:
+  #   Data frame with one row time point (depending on precision) and one column 
+  #   per variable.
+  
+  # TODO: Implement precision feature. Right now, only weekly prescion is
+  #       coded.
+  
   time.series <- data.frame()
+  
+  # Ordered variables to be visualized in the progress report
+  ordered.vars <- c(c('date', 'n_random', 'n_in_mig', 'n_out_mig'), kCRFEvents, 
+                    c('n_wdw', 'n_deaths'))
+  
+  # Variable names
+  var.names <- c('date', 'n_random', 'n_in_mig', 'n_out_mig', 'n_azi1', 'n_hh1',
+                 'n_penta2', 'n_penta3', 'n_vit_a1', 'n_azi2', 'n_hh2', 
+                 'n_vit_a2', 'n_azi3', 'n_hh3', 'n_end_fu', 'n_wdw', 'n_deaths')
   
   week.day <- 2 # First Monday 00:00 after starting
   start.date <- min(hf.data$screening_date, na.rm = T)
-  until.date <- max(hf.data$screening_date, na.rm = T)
   time.point <- NextWeekDay(start.date, week.day) 
   
-  while (time.point <= until.date) {
+  while (time.point <= report.date) {
     point <- list()
+    
     point['date'] <- as.character.Date(time.point)
+    
+    # Randomized participants
     point['n_random'] <- CountNumberOfResponses(
       data  =  hf.data[which(hf.data$screening_date < time.point), ], 
       var   = "eligible", 
       val   = 1, 
       by.hf = F
     )
-    point['n_azi1'] <- CountNumberOfResponses(
-      data  =  hf.data[which(hf.data$int_date < time.point), ], 
-      var   = "int_azi", 
-      val   = 1, 
-      event = kCRFAZiEvents[1], 
-      by.hf = F
-    )
-    point['n_hh1'] <- CountNumberOfResponses(
-      data  =  hf.data[which(hf.data$hh_date < time.point), ],
-      var   = "hh_child_seen",
-      val   = 1,
-      event = kCRFHHEvent[1],
-      by.hf = F
-    )
-    point['n_penta2'] <- CountNumberOfResponses(
-      data = hf.data[which(hf.data$int_date < time.point), ],
-      var  = "intervention_complete",
+    
+    # AZi/Pbo doses
+    for (azi.event in kCRFAZiEvents) {
+      point[azi.event] <- CountNumberOfResponses(
+        data  =  hf.data[which(hf.data$int_date < time.point), ], 
+        var   = "int_azi", 
+        val   = 1, 
+        event = azi.event, 
+        by.hf = F
+      )
+    }
+    
+    # Household post-AZi/Pbo supervision visits
+    for (hh.event in kCRFHHEvent) {
+      point[hh.event] <- CountNumberOfResponses(
+        data  =  hf.data[which(hf.data$hh_date < time.point), ],
+        var   = "hh_child_seen",
+        val   = 1,
+        event = hh.event,
+        by.hf = F
+      )
+    }
+    
+    # Non-AZi/Pbo EPI visits
+    for (epi.visit in kCRFNonAZiEvents) {
+      point[epi.visit] <- CountNumberOfResponses(
+        data = hf.data[which(hf.data$int_date < time.point), ],
+        var  = "intervention_complete",
+        val  = 2,
+        event = epi.visit,
+        by.hf = F
+      )
+    }
+    
+    # Withdrawals
+    point['n_wdw'] <- CountNumberOfResponses(
+      data = hf.data[which(hf.data$wdrawal_date < time.point), ],
+      var  = "withdrawal_complete",
       val  = 2,
-      event = kCRFEvents[3],
+      by.hf = F
+    )
+    
+    # Deaths
+    point['n_deaths'] <- CountNumberOfResponses(
+      data = hf.data[which(hf.data$death_date < time.point), ],
+      var  = "death_complete",
+      val  = 2,
+      by.hf = F
+    )
+    
+    # Out Migrations - Migrations in which the origin is this health facility
+    mig_origin_cols <- c('mig_origin_hf_bombali', 
+                         'mig_origin_hf_port_loko', 
+                         'mig_origin_hf_tonkolili')
+    hf.data$mig_origin_hf <- rowSums(hf.data[, mig_origin_cols], na.rm = T)
+    point['n_out_mig'] <- CountNumberOfResponses(
+      data = hf.data[which(hf.data$mig_date < time.point & 
+                             hf.data$mig_origin_hf == hf.id), ],
+      var  = "migration_complete",
+      val  = 2,
+      by.hf = F
+    )
+    
+    # In Migrations - Migrations in which the destination is this health 
+    # facility
+    mig_destination_cols <- c('mig_destination_hf_bombali', 
+                              'mig_destination_hf_port_loko', 
+                              'mig_destination_hf_tonkolili')
+    hf.data$mig_destination_hf <- rowSums(hf.data[, mig_destination_cols], 
+                                          na.rm = T)
+    point['n_in_mig'] <- CountNumberOfResponses(
+      data = hf.data[which(hf.data$mig_date < time.point & 
+                             hf.data$mig_destination_hf == hf.id), ],
+      var  = "migration_complete",
+      val  = 2,
       by.hf = F
     )
     
     time.series <- rbind(time.series, point, stringsAsFactors = F)
     time.point <- NextWeekDay(time.point + 1, week.day)
   }
+  
+  # Reorder and rename columns to rescpect the progress report table design
+  time.series <- time.series[, ordered.vars]
+  colnames(time.series) <- var.names
   
   return(time.series)
 }

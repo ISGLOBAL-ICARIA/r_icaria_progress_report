@@ -58,7 +58,16 @@ profile <- ExportDataTrialProfile(kRedcapAPIURL, kRedcapTokens)
 sum.data <- SummarizeData(row.names(hfs), profile, data)
 
 # Produce one data set by ICARIA Health Facility with the progress time series
-time.series <- GetHealthFacilityTimeSeries(data[which(data$hf == 'hf01'), ])
+time.series <- list()
+for (hf.id in row.names(hfs)) {
+  hf <- hfs[hf.id, 'code']
+  print(paste("Computing progress time series of", hf))
+  time.series[[hf.id]] <- GetHealthFacilityTimeSeries(
+    hf.id       = hf.id, 
+    hf.data     = data[which(data$hf == hf), ],
+    report.date = report.date
+  )
+}
 
 # Produce Excel report
 CreateExcelReport(excel.report.filename, report.date, sum.data, hfs)
