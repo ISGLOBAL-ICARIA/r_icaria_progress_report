@@ -55,7 +55,7 @@ ExportDataAllHealthFacilities <- function(redcap.api.url, redcap.tokens) {
   data <- data.frame()
   for (hf in names(redcap.tokens)) {
     #browser()
-    if (hf != "profile") {
+    if (hf != "profile" & hf != "cohort") {
       print(paste("Extracting data from", hf))
       hf.data <- ReadData(redcap.api.url, redcap.tokens[[hf]])
       hf.data <- cbind(hf = hf, hf.data)
@@ -84,6 +84,33 @@ ExportDataTrialProfile <- function(redcap.api.url, redcap.tokens) {
   return(profile)
 }
 
+ExportDataCohort <- function(redcap.api.url, redcap.tokens) {
+  # Export data from the COHORT ancillary study REDCap project.
+  #
+  # Args:
+  #   redcap.api.url: String representing the URL to access the REDCap API.
+  #   redcap.tokens:  List of tokens (Strings) to access each of the ICARIA 
+  #                   REDCap projects, among them the COHORT project.
+  # 
+  # Returns:
+  #   Data frame with the Trial Profile data.
+  
+  print("Extracting data from cohort")
+  cohort <- ReadData(redcap.api.url, redcap.tokens[['cohort']])
+  
+  # Health Facility IDs are scattered in three variables: hf_bombali, 
+  # hf_port_loko and hf_tonkolili
+  hf.columns <- c("hf_bombali", "hf_port_loko", "hf_tonkolili")
+  record.in.hf <- cohort[, c("record_id", hf.columns)]
+  record.in.hf$hf <- rowSums(record.in.hf[, hf.columns], na.rm = T)
+  record.in.hf <- record.in.hf[which(record.in.hf$hf != 0), ]
+  cohort$hf <- lapply(cohort$record_id, function(id) { 
+    record.in.hf$hf[which(record.in.hf$record_id == id)] })
+  cohort$hf <- as.numeric(cohort$hf)
+  
+  return(cohort)
+}
+
 SummarizeData <- function(hf.list, profile, data) {
   # Compute the data frame to produce the general progress table.
   #
@@ -97,7 +124,7 @@ SummarizeData <- function(hf.list, profile, data) {
   # Returns:
   #   Data frame with all the indicators by health facility to produce the 
   #   general progress table of the report.
-  
+
   profile.sum <- SummarizeProfileData(hf.list, profile)
   crf.sum <- SummarizeCRFData(hf.list, data)
   
@@ -338,6 +365,43 @@ SummarizeCRFData <- function(hf.list, data) {
   return(summary)
 }
 
+SummarizeCohortData <- function(hf.list, data) {
+  # Compute and returns the sum of the recruitment progress variables by health 
+  # facility in the COHORT ancillary study. These variables are:
+  #   (1) n_recruited:  Number of children going through the informed consent
+  #                     process in which their caretakers do sign the informed 
+  #                     content form.
+  #   (2) n_ipti1:      Number children who took the 1st dose of IPTi.
+  #   (3) n_ipti2:      Number children who took the 2nd dose of IPTi.
+  #   (4) n_ipti3:      Number children who took the 3rd dose of IPTi.
+  #   (5) n_mrv2:       Number children who took the 2nd dose of MRV.
+  #
+  # Args:
+  #   hf.list: List of ICARIA health facilities IDs (integers) to be summarized.
+  #   data:    Data frame containing COHORT study data.
+  # 
+  # Returns:
+  #   Data frame with one row per health facility and one column per variable to
+  #   be summarized.
+  browser()
+  # Ordered variables to be visualized in the progress report
+  ordered.vars <- c('hf.list')
+  
+  # Variable names
+  var.names <- c('hf.list', 'n_recruited', 'n_ipti1', 'n_ipti2', 'n_ipti3', 
+                 'n_mrv2')
+  
+  # Summarize all COHORT variables by health facility
+  summary <- data.frame(hf.list)
+  
+  # Get number of recruited participants. In this case, unlike the TRIAL 
+  # projects, we don't have the eligible variable. So we have to check how many
+  # study number do we have
+  summary['n_recruited'] <- table(cohort$hf[which(!is.na(cohort$study_number))])
+  
+  return(summary)
+}
+
 NextWeekDay <- function(date, week.day) {
   # Compute the date of the requested next week day since the provided date.
   #
@@ -551,9 +615,11 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   
   # Set districts and health facility names
   general.progress$hf.list <- NULL
-  rownames(general.progress) <- paste(health.facilities$district, 
-                                      health.facilities$code, 
-                                      health.facilities$name)
+  rownames(general.progress) <- paste(
+    health.facilities$district[health.facilities$trial], 
+    health.facilities$code[health.facilities$trial], 
+    health.facilities$name[health.facilities$trial]
+  )
   
   # Set column names
   colnames(general.progress) <- c("Penta1", "Approached", "Underweight", 
