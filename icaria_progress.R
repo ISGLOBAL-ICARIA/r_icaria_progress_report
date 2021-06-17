@@ -33,6 +33,13 @@ kCRFEvents <- c(
   kCRFHHEvent[4]
 )
 
+kCOHORTEvents <- c(
+  'ipti_1__10_weeks_r_arm_1',  # IPTi 1 - 10 weeks Recruit
+  'ipti_2__14_weeks_arm_1',    # IPTi 2 - 14 weeks
+  'ipti_3__9_months_arm_1',    # IPTi 3 - 9 months
+  'mrv_2__15_months_arm_1'     # MRV 2 - 15 months
+)
+
 ReadData <- function(api.url, api.token) {
   #browser()
   rcon <- redcapConnection(api.url, api.token)
@@ -106,7 +113,7 @@ ExportDataCohort <- function(redcap.api.url, redcap.tokens) {
   record.in.hf <- record.in.hf[which(record.in.hf$hf != 0), ]
   cohort$hf <- lapply(cohort$record_id, function(id) { 
     record.in.hf$hf[which(record.in.hf$record_id == id)] })
-  cohort$hf <- as.numeric(cohort$hf)
+  cohort$hf <- as.factor(as.numeric(cohort$hf))
   
   return(cohort)
 }
@@ -351,6 +358,7 @@ SummarizeCRFData <- function(hf.list, data) {
   }
   
   # Summarize deaths
+  browser()
   var <- 'death_complete'
   summary[var] <- CountNumberOfResponses(data, var, 2)
   
@@ -383,9 +391,6 @@ SummarizeCohortData <- function(hf.list, data) {
   # Returns:
   #   Data frame with one row per health facility and one column per variable to
   #   be summarized.
-  browser()
-  # Ordered variables to be visualized in the progress report
-  ordered.vars <- c('hf.list')
   
   # Variable names
   var.names <- c('hf.list', 'n_recruited', 'n_ipti1', 'n_ipti2', 'n_ipti3', 
@@ -397,7 +402,16 @@ SummarizeCohortData <- function(hf.list, data) {
   # Get number of recruited participants. In this case, unlike the TRIAL 
   # projects, we don't have the eligible variable. So we have to check how many
   # study number do we have
-  summary['n_recruited'] <- table(cohort$hf[which(!is.na(cohort$study_number))])
+  summary['n_recruited'] <- table(data$hf[which(!is.na(data$study_number))])
+  
+  # Sumarize events
+  for (event in kCOHORTEvents) {
+    var <- 'intervention_complete'
+    summary[event] <- CountNumberOfResponses(data, var, 2, event)  
+  }
+  
+  # Rename columns to rescpect the progress report table design
+  colnames(summary) <- var.names
   
   return(summary)
 }

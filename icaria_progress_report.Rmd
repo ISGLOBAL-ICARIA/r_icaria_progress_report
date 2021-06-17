@@ -66,8 +66,11 @@ profile <- ExportDataTrialProfile(kRedcapAPIURL, kRedcapTokens)
 cohort <- ExportDataCohort(kRedcapAPIURL, kRedcapTokens)
 
 # Produce data set with progress indicators by ICARIA Health Facility
-trial.progress <- SummarizeData(row.names(hfs[which(hfs$trial), ]), 
-                                profile, data)
+trial.progress <- SummarizeData(
+  hf.list = row.names(hfs[which(hfs$trial), ]),
+  profile = profile, 
+  data    = data
+)
 
 # Produce one data set by ICARIA Health Facility with the progress time series
 time.series <- list()
@@ -82,7 +85,10 @@ for (hf.id in row.names(hfs[which(hfs$trial), ])) {
 }
 
 # Produce data set with progress indicators for the COHORT ancillary study
-# cohort.progress <- SummarizeCohortData(row.names(hfs), cohort)
+cohort.progress <- SummarizeCohortData(
+  hf.list = row.names(hfs[which(hfs$cohort), ]), 
+  data    = cohort
+)
 
 # Produce Excel report
 CreateExcelReport(
