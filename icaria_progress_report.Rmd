@@ -94,7 +94,8 @@ cohort.progress <- SummarizeCohortData(
 CreateExcelReport(
   filename          = excel.report.filename, 
   report.date       = report.date, 
-  general.progress  = trial.progress, 
+  general.progress  = trial.progress,
+  cohort.progress   = cohort.progress, 
   time.series       = time.series, 
   health.facilities = hfs
 )

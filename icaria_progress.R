@@ -410,6 +410,10 @@ SummarizeCohortData <- function(hf.list, data) {
     summary[event] <- CountNumberOfResponses(data, var, 2, event)  
   }
   
+  # Convert all columns to the same type: numeric
+  summary$hf.list <- as.character(summary$hf.list)  # Remove factors
+  summary <- as.data.frame(lapply(summary, as.numeric))
+  
   # Rename columns to rescpect the progress report table design
   colnames(summary) <- var.names
   
@@ -611,7 +615,7 @@ PreVisualizationProcess <- function(df, columns.remove.if.zero) {
 }
 
 CreateExcelReport <- function(filename, report.date, general.progress, 
-                              time.series, health.facilities) {
+                              cohort.progress, time.series, health.facilities) {
   
   # Sizes
   kNarrowColumn <- 9
@@ -635,6 +639,13 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     health.facilities$name[health.facilities$trial]
   )
   
+  cohort.progress$hf.list <- NULL
+  rownames(cohort.progress) <- paste(
+    health.facilities$district[health.facilities$cohort], 
+    health.facilities$code[health.facilities$cohort], 
+    health.facilities$name[health.facilities$cohort]
+  )
+  
   # Set column names
   colnames(general.progress) <- c("Penta1", "Approached", "Underweight", 
                                   "Over Age", "Refusals", "ICF Signed (LOG)", 
@@ -647,10 +658,17 @@ CreateExcelReport <- function(filename, report.date, general.progress,
                                   "Parent Request", "Investigator", "Migration",
                                   "Other", "Deaths")
   
-  # Create the totals row
+  colnames(cohort.progress) <- c("Recruited", "IPTi1", "IPTi2", "IPTi3", "MRV2")
+  
+  # Create the totals rows
+  total.string <- "Total"
   general.progress <- rbind(general.progress, colSums(general.progress))
-  last.row <- nrow(general.progress)
-  rownames(general.progress)[last.row] <- "Total"
+  general.last.row <- nrow(general.progress)
+  rownames(general.progress)[general.last.row] <- total.string
+  
+  cohort.progress <- rbind(cohort.progress, colSums(cohort.progress))
+  cohort.last.row <- nrow(cohort.progress)
+  rownames(cohort.progress)[cohort.last.row] <- total.string
   
   # Process data frame for visualization: (1) Remove failure and withdrawal
   # reason columns if zero
@@ -746,7 +764,7 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   
   # Add ICARIA TRIAL general progress table
   addDataFrame(
-    x             = general.progress[-last.row, ], 
+    x             = general.progress[-general.last.row, ], 
     sheet         = overview.sheet, 
     startColumn   = 1,
     startRow      = 3,
@@ -767,13 +785,23 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   names(col.style) <- seq(1, ncol(general.progress), by = 1)
   
   addDataFrame(
-    x = general.progress[last.row, ],
+    x = general.progress[general.last.row, ],
     sheet = overview.sheet,
     startColumn = 1,
     startRow = nrow(general.progress) + 3,
     col.names = F,
     rownamesStyle = table.header,
     colStyle = col.style
+  )
+  
+  # Add COHORT general progress table
+  addDataFrame(
+    x             = cohort.progress[-cohort.last.row, ], 
+    sheet         = overview.sheet, 
+    startColumn   = 1,
+    startRow      = nrow(general.progress) + 6,
+    colnamesStyle = table.header,
+    rownamesStyle = table.header + left.align
   )
   
   # Create one Excel sheet per Health Facility containing the progress in time
