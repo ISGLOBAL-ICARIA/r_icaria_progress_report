@@ -788,7 +788,7 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     x = general.progress[general.last.row, ],
     sheet = overview.sheet,
     startColumn = 1,
-    startRow = nrow(general.progress) + 3,
+    startRow = 3 + nrow(general.progress),
     col.names = F,
     rownamesStyle = table.header,
     colStyle = col.style
@@ -799,9 +799,24 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     x             = cohort.progress[-cohort.last.row, ], 
     sheet         = overview.sheet, 
     startColumn   = 1,
-    startRow      = nrow(general.progress) + 6,
+    startRow      = 3 + nrow(general.progress) + 3,
     colnamesStyle = table.header,
     rownamesStyle = table.header + left.align
+  )
+  
+  # Add Totals row at the bottom of the table as an independent data frame to
+  # control de style
+  col.style <- rep(list(table.totals), ncol(cohort.progress))
+  names(col.style) <- seq(1, ncol(cohort.progress), by = 1)
+  
+  addDataFrame(
+    x = cohort.progress[cohort.last.row, ],
+    sheet = overview.sheet,
+    startColumn = 1,
+    startRow = 3 + nrow(general.progress) + 3 + nrow(cohort.progress),
+    col.names = F,
+    rownamesStyle = table.header,
+    colStyle = col.style
   )
   
   # Create one Excel sheet per Health Facility containing the progress in time
