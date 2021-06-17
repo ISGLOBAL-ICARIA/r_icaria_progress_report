@@ -22,17 +22,25 @@ excel.report.filename <- paste0(
 
 # Define set of health facilities
 hfs <- data.frame(
-  code     = c("HF01", "HF02", "HF03", "HF05", "HF08", "HF10", "HF11", "HF12", 
-               "HF13", "HF15", "HF16"),
+  code     = c("HF01", "HF02", "HF03", "HF04", "HF05", "HF06", "HF07", "HF08", 
+               "HF09", "HF10", "HF11", "HF12", "HF13", "HF14", "HF15", "HF16"),
+  
   name     = c("Lungi Under Fives CHP", "Lunsar CHC", "Mahera CHC", 
-               "Port Loko U5 CHP", "Magburaka Under Fives Clinic", 
+               "Masiaka CHC", "Port Loko U5 CHP", "Rogbere Junction CHC",
+               "Mange CHC", "Magburaka Under Fives Clinic", "Masingbi CHC", 
                "Matotoka CHC", "Loreto Clinic", "Red Cross (Makeni City) CHP", 
-               "Stocco CHP", "Makama CHP", "Makeni Government Hospital"),
-  district = c("Port Loko", "Port Loko", "Port Loko", "Port Loko", "Tonkolili",
-               "Tonkolili", "Bombali", "Bombali", "Bombali", "Bombali", 
-               "Bombali")
+               "Stocco CHP", "Binkolo CHC", "Makama CHP", 
+               "Makeni Government Hospital"),
+  
+  district = c("Port Loko", "Port Loko", "Port Loko", "Port Loko", "Port Loko",
+               "Port Loko", "Port Loko", "Tonkolili", "Tonkolili", "Tonkolili", 
+               "Bombali", "Bombali", "Bombali", "Bombali", "Bombali", "Bombali"),
+  
+  trial    = c(T, T, T, F, T, F, F, T, F, T, T, T, T, F, T, T),
+  
+  cohort   = c(T, T, T, T, T, T, F, T, T, T, T, F, T, F, F, T)
 )
-row.names(hfs) <- c(1, 2, 3, 5, 8, 10, 11, 12, 13, 15, 16)
+row.names(hfs) <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
 
 # TODO: Implement the possibility to get the report for a concrete date
 filter.by.date <- T
@@ -54,13 +62,17 @@ data <- ExportDataAllHealthFacilities(kRedcapAPIURL, kRedcapTokens)
 # Export data from trial profile (data recorded on the screening log)
 profile <- ExportDataTrialProfile(kRedcapAPIURL, kRedcapTokens)
 
+# Export data from the COHORT project (ancillary study)
+cohort <- ExportDataCohort(kRedcapAPIURL, kRedcapTokens)
+
 # Produce data set with progress indicators by ICARIA Health Facility
-sum.data <- SummarizeData(row.names(hfs), profile, data)
+trial.progress <- SummarizeData(row.names(hfs[which(hfs$trial), ]), 
+                                profile, data)
 
 # Produce one data set by ICARIA Health Facility with the progress time series
 time.series <- list()
-for (hf.id in row.names(hfs)) {
-  hf <- hfs[hf.id, 'code']
+for (hf.id in row.names(hfs[which(hfs$trial), ])) {
+  hf <- as.character(hfs[hf.id, 'code'])
   print(paste("Computing progress time series of", hf))
   time.series[[hf.id]] <- GetHealthFacilityTimeSeries(
     hf.id       = hf.id, 
@@ -69,11 +81,14 @@ for (hf.id in row.names(hfs)) {
   )
 }
 
+# Produce data set with progress indicators for the COHORT ancillary study
+# cohort.progress <- SummarizeCohortData(row.names(hfs), cohort)
+
 # Produce Excel report
 CreateExcelReport(
   filename          = excel.report.filename, 
   report.date       = report.date, 
-  general.progress  = sum.data, 
+  general.progress  = trial.progress, 
   time.series       = time.series, 
   health.facilities = hfs
 )
