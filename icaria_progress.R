@@ -715,7 +715,8 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     time.series.sheet <- createSheet(wb, sheet.name)
     
     # Set columns widths
-    setColumnWidth(time.series.sheet, 1:17, kNormalColumn) # Indicators
+    setColumnWidth(time.series.sheet, 1, kWideColumn)      # Time point
+    setColumnWidth(time.series.sheet, 2:17, kNormalColumn) # Indicators
     
     # Add Helath Facility details
     row <- createRow(time.series.sheet, rowIndex = 1)
