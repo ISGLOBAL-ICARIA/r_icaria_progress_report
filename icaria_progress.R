@@ -617,10 +617,18 @@ PreVisualizationProcess <- function(df, columns.remove.if.zero) {
 CreateExcelReport <- function(filename, report.date, general.progress, 
                               cohort.progress, time.series, health.facilities) {
   
+  # Positions
+  kStartColumn <- 1
+  kStartRow    <- 3
+  
   # Sizes
   kNarrowColumn <- 9
   kNormalColumn <- 11
   kWideColumn   <- 36
+  kLargeColumn  <- 70
+  
+  kWideRow      <- 30
+  
   kSmallFont    <- 10
   kTinyFont     <- 9
   
@@ -743,21 +751,32 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     font = totals.font
   )
   
+  comments.font <- Font(
+    wb             = wb, 
+    heightInPoints = kTinyFont
+  )
+  table.comments <- CellStyle(
+    wb        = wb,
+    font      = comments.font
+  )
+  
   time.points <- CellStyle(
     wb = wb,
     fill = totals.background
   )
   
-  # Create first Excel sheet called Overview containing the ICARIA TRIAL and
-  # COHORT general progress by Health Facility
-  overview.sheet <- createSheet(wb, "Overview")
+  # Create first Excel sheet called TRIAL containing the ICARIA TRIAL general 
+  #progress by Health Facility
+  trial.sheet <- createSheet(wb, "TRIAL")
   
   # Set columns widths
-  setColumnWidth(overview.sheet, 1, kWideColumn)      # District + HF column
-  setColumnWidth(overview.sheet, 2:21, kNormalColumn) # Indicators
+  num.cols <- ncol(general.progress) + 1
+  setColumnWidth(trial.sheet, 1, kWideColumn)              # District + HF
+  setColumnWidth(trial.sheet, 2:num.cols, kNormalColumn)   # Indicators
+  setColumnWidth(trial.sheet, num.cols + 1, kLargeColumn)  # Comments
   
   # Add report date
-  row <- createRow(overview.sheet, rowIndex = 1)
+  row <- createRow(trial.sheet, rowIndex = 1)
   cell <- createCell(row, colIndex = 1)[[1]]
   date <- format(report.date, format = "%Y%m%d %H:%M")
   setCellValue(cell, paste("Report Date:", date))
@@ -765,9 +784,9 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   # Add ICARIA TRIAL general progress table
   addDataFrame(
     x             = general.progress[-general.last.row, ], 
-    sheet         = overview.sheet, 
-    startColumn   = 1,
-    startRow      = 3,
+    sheet         = trial.sheet, 
+    startColumn   = kStartColumn,
+    startRow      = kStartRow,
     colnamesStyle = table.header,
     rownamesStyle = table.header + left.align,
     colStyle      = list(
@@ -779,6 +798,10 @@ CreateExcelReport <- function(filename, report.date, general.progress,
       '18' = table.subcolumn + subcolumn.background + subcolumn.font)
   )
   
+  # Set table header row height
+  table.header.row <- getRows(trial.sheet, kStartRow)
+  setRowHeight(table.header.row, kWideRow)
+  
   # Add Totals row at the bottom of the table as an independent data frame to
   # control de style
   col.style <- rep(list(table.totals), ncol(general.progress))
@@ -786,23 +809,50 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   
   addDataFrame(
     x = general.progress[general.last.row, ],
-    sheet = overview.sheet,
-    startColumn = 1,
-    startRow = 3 + nrow(general.progress),
+    sheet = trial.sheet,
+    startColumn = kStartColumn,
+    startRow = kStartRow + nrow(general.progress),
     col.names = F,
     rownamesStyle = table.header,
     colStyle = col.style
   )
   
+  # Add the Comments column at the end of the table as an independed data frame
+  comments <- list(
+    "Comments" = health.facilities$comments_trial[health.facilities$trial])
+  addDataFrame(
+    x = comments,
+    sheet = trial.sheet,
+    startColumn = ncol(general.progress) + 2,
+    startRow = kStartRow,
+    row.names = F,
+    colnamesStyle = table.header + left.align,
+    colStyle = list('1' = table.comments)
+  )
+  
+  # Create second Excel sheet called Overview containing the COHORT general 
+  # progress by Health Facility
+  cohort.sheet <- createSheet(wb, "COHORT")
+  
+  # Set columns widths
+  num.cols <- ncol(cohort.progress) + 1
+  setColumnWidth(cohort.sheet, 1, kWideColumn)             # District + HF
+  setColumnWidth(cohort.sheet, 2:num.cols, kNormalColumn)  # Indicators
+  setColumnWidth(cohort.sheet, num.cols + 1, kLargeColumn) # Comments
+  
   # Add COHORT general progress table
   addDataFrame(
     x             = cohort.progress[-cohort.last.row, ], 
-    sheet         = overview.sheet, 
-    startColumn   = 1,
-    startRow      = 3 + nrow(general.progress) + 3,
+    sheet         = cohort.sheet, 
+    startColumn   = kStartColumn,
+    startRow      = kStartRow,
     colnamesStyle = table.header,
     rownamesStyle = table.header + left.align
   )
+  
+  # Set table header row height
+  table.header.row <- getRows(cohort.sheet, kStartRow)
+  setRowHeight(table.header.row, kWideRow)
   
   # Add Totals row at the bottom of the table as an independent data frame to
   # control de style
@@ -811,12 +861,25 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   
   addDataFrame(
     x = cohort.progress[cohort.last.row, ],
-    sheet = overview.sheet,
-    startColumn = 1,
-    startRow = 3 + nrow(general.progress) + 3 + nrow(cohort.progress),
+    sheet = cohort.sheet,
+    startColumn = kStartColumn,
+    startRow = kStartRow + nrow(cohort.progress),
     col.names = F,
     rownamesStyle = table.header,
     colStyle = col.style
+  )
+  
+  # Add the Comments column at the end of the table as an independed data frame
+  comments <- list(
+    "Comments" = health.facilities$comments_cohort[health.facilities$cohort])
+  addDataFrame(
+    x = comments,
+    sheet = cohort.sheet,
+    startColumn = ncol(cohort.progress) + 2,
+    startRow = kStartRow,
+    row.names = F,
+    colnamesStyle = table.header + left.align,
+    colStyle = list('1' = table.comments)
   )
   
   # Create one Excel sheet per Health Facility containing the progress in time
@@ -853,11 +916,15 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     addDataFrame(
       x             = series, 
       sheet         = time.series.sheet, 
-      startColumn   = 1,
-      startRow      = 3,
+      startColumn   = kStartColumn,
+      startRow      = kStartRow,
       colnamesStyle = table.header,
       rownamesStyle = time.points
     )
+    
+    # Set table header row height
+    table.header.row <- getRows(time.series.sheet, kStartRow)
+    setRowHeight(table.header.row, kWideRow)
   }
   
   # Save Excel Work Book

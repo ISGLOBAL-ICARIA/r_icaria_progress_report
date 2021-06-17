@@ -36,9 +36,15 @@ hfs <- data.frame(
                "Port Loko", "Port Loko", "Tonkolili", "Tonkolili", "Tonkolili", 
                "Bombali", "Bombali", "Bombali", "Bombali", "Bombali", "Bombali"),
   
-  trial    = c(T, T, T, F, T, F, F, T, F, T, T, T, T, F, T, T),
+  trial          = c(T, T, T, F, T, F, F, T, F, T, T, T, T, F, T, T),
   
-  cohort   = c(T, T, T, T, T, T, F, T, T, T, T, F, T, F, F, T)
+  cohort         = c(T, T, T, T, T, T, F, T, T, T, T, F, T, F, F, T),
+  
+  comments_trial = NA,
+  
+  comments_cohort = c(NA, NA, NA, NA, NA, NA, NA, NA,
+                      "This HF has been dropped out from the study. 30 extra participants have been recruited.",
+                      NA, NA, NA, NA, NA, NA, NA)
 )
 row.names(hfs) <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
 
