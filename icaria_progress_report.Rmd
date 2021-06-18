@@ -20,6 +20,17 @@ excel.report.filename <- paste0(
   kExcelExtension
 )
 
+# Define report meta-data
+report.metadata <- list(
+  name        = "ICARIA Progress Report",
+  description = "Progress indicators for the ICARIA Clinical Trial and ancillary studies",
+  version     = "1.0",
+  date        = format(report.date, format = "%Y-%m-%d %H:%M"),
+  filename    = excel.report.filename,
+  author      = "Máximo Ramírez Robles",
+  link        = "https://github.com/maxramirez84/r_icaria_progress_report"
+)
+
 # Define set of health facilities
 hfs <- data.frame(
   code     = c("HF01", "HF02", "HF03", "HF04", "HF05", "HF06", "HF07", "HF08", 
@@ -102,8 +113,7 @@ cohort.progress <- SummarizeCohortData(
 
 # Produce Excel report
 CreateExcelReport(
-  filename          = excel.report.filename, 
-  report.date       = report.date, 
+  metadata          = report.metadata,
   general.progress  = trial.progress,
   cohort.progress   = cohort.progress, 
   time.series       = time.series, 

@@ -1,6 +1,7 @@
 library(redcapAPI)
 library(xlsx)
 library(lubridate)
+library(stringr)
 
 kCRFAZiEvents <- c(
   'epipenta1_v0_recru_arm_1',  # EPI-Penta1 V0 Recruit AZi/Pbo1
@@ -614,8 +615,8 @@ PreVisualizationProcess <- function(df, columns.remove.if.zero) {
   return(df)
 }
 
-CreateExcelReport <- function(filename, report.date, general.progress, 
-                              cohort.progress, time.series, health.facilities) {
+CreateExcelReport <- function(metadata, general.progress, cohort.progress, 
+                              time.series, health.facilities) {
   
   # Positions
   kStartColumn <- 1
@@ -762,7 +763,6 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     font      = comments.font
   )
   
-  
   highlight.background <- Fill(
     backgroundColor = kHEXYellowLight, 
     foregroundColor = kHEXYellowLight,
@@ -787,7 +787,35 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     fill = totals.background
   )
   
-  # Create first Excel sheet called TRIAL containing the ICARIA TRIAL general 
+  # Create first Excel sheet called META containing the report meta-data
+  meta.sheet <- createSheet(wb, "META")
+  setColumnWidth(meta.sheet, 1, kWideColumn)     # Meta-data key
+  setColumnWidth(meta.sheet, 2, kLargeColumn)   # Meta-data value
+  
+  meta.df <- data.frame(row.names = str_to_title(names(metadata)))
+  meta.df$value <- metadata
+  
+  addDataFrame(
+    x             = meta.df,
+    sheet         = meta.sheet,
+    startColumn   = 1,
+    startRow      = 1,
+    rownamesStyle = table.header + left.align,
+    col.names     = F,
+    colStyle = list('1' = table.comments)
+  )
+  
+  row <- getRows(meta.sheet, 7)
+  cells <- getCells(row, 2)
+  addHyperlink(cells[[1]], meta.df$value[[7]], "URL", table.comments)
+  
+  # Add report date
+  #row <- createRow(trial.sheet, rowIndex = 1)
+  #cell <- createCell(row, colIndex = 1)[[1]]
+  #date <- format(report.date, format = "%Y%m%d %H:%M")
+  #setCellValue(cell, paste("Report Date:", date))
+  
+  # Create second Excel sheet called TRIAL containing the ICARIA TRIAL general 
   #progress by Health Facility
   trial.sheet <- createSheet(wb, "TRIAL")
   
@@ -796,12 +824,6 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   setColumnWidth(trial.sheet, 1, kWideColumn)              # District + HF
   setColumnWidth(trial.sheet, 2:num.cols, kNormalColumn)   # Indicators
   setColumnWidth(trial.sheet, num.cols + 1, kLargeColumn)  # Comments
-  
-  # Add report date
-  row <- createRow(trial.sheet, rowIndex = 1)
-  cell <- createCell(row, colIndex = 1)[[1]]
-  date <- format(report.date, format = "%Y%m%d %H:%M")
-  setCellValue(cell, paste("Report Date:", date))
   
   # Add ICARIA TRIAL general progress table
   addDataFrame(
@@ -852,7 +874,7 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     colStyle = list('1' = table.comments)
   )
   
-  # Create second Excel sheet called Overview containing the COHORT general 
+  # Create third Excel sheet called COHORT containing the COHORT general 
   # progress by Health Facility
   cohort.sheet <- createSheet(wb, "COHORT")
   
@@ -931,7 +953,7 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   for (hf.id in names(time.series)) {
     # Set row names as date points
     series <- time.series[[hf.id]]
-    row.names(series) <- series$date
+    row.names(series) <- paste("Week", 1:nrow(series), "-", "Monday", series$date, "00:00:00")
     series$date <- NULL
     
     # Set column names
@@ -973,5 +995,5 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   }
   
   # Save Excel Work Book
-  saveWorkbook(wb, filename)
+  saveWorkbook(wb, metadata$filename)
 }
