@@ -637,6 +637,8 @@ CreateExcelReport <- function(filename, report.date, general.progress,
   kHEXBlueGrayLight <- "#E6EEFA"
   kHEXBlueGrayDark  <- "#D6E2F6"
   kHEXGray          <- "#E7E6E6"
+  kHEXYellowLight   <- "#FFF2CC"
+  kHEXYellowDark    <- "#BF8F00"
   kINDWhite         <- 9
   
   # Set districts and health facility names
@@ -760,8 +762,28 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     font      = comments.font
   )
   
+  
+  highlight.background <- Fill(
+    backgroundColor = kHEXYellowLight, 
+    foregroundColor = kHEXYellowLight,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  highlight.header.background <- Fill(
+    backgroundColor = kHEXYellowDark, 
+    foregroundColor = kHEXYellowDark,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  highlight.font <- Font(
+    wb       = wb,
+    isItalic = T
+  )
+  highlight <- CellStyle(
+    wb   = wb,
+    font = highlight.font
+  )
+  
   time.points <- CellStyle(
-    wb = wb,
+    wb   = wb,
     fill = totals.background
   )
   
@@ -881,6 +903,29 @@ CreateExcelReport <- function(filename, report.date, general.progress,
     colnamesStyle = table.header + left.align,
     colStyle = list('1' = table.comments)
   )
+  
+  # Highlight rows
+  cohort.health.facilities <- health.facilities[health.facilities$cohort, ]
+  for (i in 1:nrow(cohort.health.facilities)) {
+    if (cohort.health.facilities$cohort_highlighted[i]) {
+      row <- getRows(cohort.sheet, i + kStartRow)
+      
+      # Header
+      cells <- getCells(row, kStartColumn)
+      setCellStyle(cells[[1]], highlight + highlight.header.background + 
+                     header.font)
+      
+      # Values
+      cells <- getCells(row, (kStartColumn + 1):(ncol(cohort.progress) + 1))
+      for (cell in cells) {
+        setCellStyle(cell, highlight + highlight.background) 
+      }
+      
+      # Comments
+      cells <- getCells(row, ncol(cohort.progress) + 2)
+      setCellStyle(cells[[1]], highlight + highlight.background + comments.font)
+    }
+  }
   
   # Create one Excel sheet per Health Facility containing the progress in time
   for (hf.id in names(time.series)) {
