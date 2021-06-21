@@ -47,7 +47,7 @@ hfs <- data.frame(
                "Port Loko", "Port Loko", "Tonkolili", "Tonkolili", "Tonkolili", 
                "Bombali", "Bombali", "Bombali", "Bombali", "Bombali", "Bombali"),
   
-  trial          = c(T, T, T, F, T, F, F, T, F, T, T, T, T, F, T, T),
+  trial          = c(T, T, T, T, T, T, F, T, F, T, T, T, T, F, T, T),
   
   cohort         = c(T, T, T, T, T, T, F, T, T, T, T, F, T, F, F, T),
   

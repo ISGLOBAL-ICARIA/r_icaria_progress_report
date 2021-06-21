@@ -359,7 +359,6 @@ SummarizeCRFData <- function(hf.list, data) {
   }
   
   # Summarize deaths
-  browser()
   var <- 'death_complete'
   summary[var] <- CountNumberOfResponses(data, var, 2)
   
