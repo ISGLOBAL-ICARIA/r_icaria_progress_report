@@ -34,34 +34,36 @@ report.metadata <- list(
 # Define set of health facilities
 hfs <- data.frame(
   code     = c("HF01", "HF02", "HF03", "HF04", "HF05", "HF06", "HF07", "HF08", 
-               "HF09", "HF10", "HF11", "HF12", "HF13", "HF14", "HF15", "HF16"),
+               "HF09", "HF10", "HF11", "HF12", "HF13", "HF14", "HF15", "HF16",
+               "HF17"),
   
   name     = c("Lungi Under Fives CHP", "Lunsar CHC", "Mahera CHC", 
                "Masiaka CHC", "Port Loko U5 CHP", "Rogbere Junction CHC",
                "Mange CHC", "Magburaka Under Fives Clinic", "Masingbi CHC", 
                "Matotoka CHC", "Loreto Clinic", "Red Cross (Makeni City) CHP", 
                "Stocco CHP", "Binkolo CHC", "Makama CHP", 
-               "Makeni Government Hospital"),
+               "Makeni Government Hospital", "Masuba CHC"),
   
   district = c("Port Loko", "Port Loko", "Port Loko", "Port Loko", "Port Loko",
                "Port Loko", "Port Loko", "Tonkolili", "Tonkolili", "Tonkolili", 
-               "Bombali", "Bombali", "Bombali", "Bombali", "Bombali", "Bombali"),
+               "Bombali", "Bombali", "Bombali", "Bombali", "Bombali", "Bombali",
+               "Bombali"),
   
-  trial          = c(T, T, T, T, T, T, F, T, F, T, T, T, T, F, T, T),
+  trial          = c(T, T, T, T, T, T, F, T, F, T, T, T, T, F, T, T, T),
   
-  cohort         = c(T, T, T, T, T, T, F, T, T, T, T, F, T, F, F, T),
+  cohort         = c(T, T, T, T, T, T, F, T, T, T, T, F, T, F, F, T, F),
   
   comments_trial = NA,
   
   comments_cohort = c(NA, NA, NA, NA, NA, NA, NA, NA,
                       "This HF has been dropped out from the study. 30 extra participants have been recruited.",
-                      NA, NA, NA, NA, NA, NA, NA),
+                      NA, NA, NA, NA, NA, NA, NA, NA),
   
-  trial_highlighted  = c(F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F),
+  trial_highlighted  = c(F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F),
   
-  cohort_highlighted = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F)
+  cohort_highlighted = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F)
 )
-row.names(hfs) <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
+row.names(hfs) <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)
 
 # TODO: Implement the possibility to get the report for a concrete date
 filter.by.date <- T
@@ -119,6 +121,9 @@ CreateExcelReport(
   time.series       = time.series, 
   health.facilities = hfs
 )
+
+# Follo-up of Non-compliants
+View(data[which(startsWith(data$child_fu_status, 'NC@')), c('hf', 'study_number', 'child_fu_status')])
 ```
 
 ```{r out.width="30px", echo=FALSE}
