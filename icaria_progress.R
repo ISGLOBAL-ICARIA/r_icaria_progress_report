@@ -622,8 +622,9 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
   kStartRow    <- 3
   
   # Positions in data frame
-  kICFLogColumn <- 6
-  kICFeCRFColumn <- 7
+  kICFLogColumn          <- 6
+  kICFeCRFColumn         <- 7
+  kNumberOfLogIndicators <- 6
   
   # Sizes
   kNarrowColumn <- 9
@@ -637,14 +638,16 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
   kTinyFont     <- 9
   
   # Colors
-  kHEXDarkBlue      <- "#44546A"
-  kHEXBlueGrayLight <- "#E6EEFA"
-  kHEXBlueGrayDark  <- "#D6E2F6"
-  kHEXGray          <- "#E7E6E6"
-  kHEXYellowLight   <- "#FFF2CC"
-  kHEXYellowDark    <- "#BF8F00"
-  kHEXRed           <- "#FC0000"
-  kINDWhite         <- 9
+  kHEXDarkBlue       <- "#44546A"
+  kHEXBlueGrayLight  <- "#E6EEFA"
+  kHEXBlueGrayLight2 <- "#ACB9CA"
+  kHEXBlueGrayDark   <- "#D6E2F6"
+  kHEXBlueGrayDark2  <- "#8497B0"
+  kHEXGray           <- "#E7E6E6"
+  kHEXYellowLight    <- "#FFF2CC"
+  kHEXYellowDark     <- "#BF8F00"
+  kHEXRed            <- "#FC0000"
+  kINDWhite          <- 9
   
   # Set districts and health facility names
   general.progress$hf.list <- NULL
@@ -661,10 +664,13 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
     health.facilities$name[health.facilities$cohort]
   )
   
+  # Super header names
+  kSuperHeaders <- c("Source: Screening Log", "Source: eCRF")
+  
   # Set column names
   colnames(general.progress) <- c("Penta1", "Approached", "Underweight", 
-                                  "Over Age", "Refusals", "ICF Signed (LOG)", 
-                                  "ICF Signed (CRF)", "Screening Failures", 
+                                  "Over Age", "Refusals", "ICF Signed", 
+                                  "ICF Signed", "Screening Failures", 
                                   "More than 10w", "No Penta1", "Less than 4kg",
                                   "Catchment Area", "Other Study", "Allergy", 
                                   "Disease", "Illness", "Randomized", 
@@ -705,6 +711,10 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
   left.align <- Alignment(
     h        = "ALIGN_LEFT"
   )
+  center.align <- Alignment(
+    h        = "ALIGN_CENTER"
+  )
+  
   header.background <- Fill(
     backgroundColor = kHEXDarkBlue, 
     foregroundColor = kHEXDarkBlue,
@@ -721,6 +731,36 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
     alignment = right.align,
     fill      = header.background,
     font      = header.font
+  )
+  
+  super.header.background.1 <- Fill(
+    backgroundColor = kHEXBlueGrayDark2, 
+    foregroundColor = kHEXBlueGrayDark2,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  super.header.background.2 <- Fill(
+    backgroundColor = kHEXBlueGrayLight2, 
+    foregroundColor = kHEXBlueGrayLight2,
+    pattern         = "SOLID_FOREGROUND"
+  )
+  super.header.font <- Font(
+    wb             = wb, 
+    color          = kINDWhite, 
+    isBold         = T,
+    isItalic       = T, 
+    heightInPoints = kSmallFont
+  )
+  super.header.1 <- CellStyle(
+    wb        = wb,
+    alignment = center.align,
+    fill      = super.header.background.1,
+    font      = super.header.font
+  )
+  super.header.2 <- CellStyle(
+    wb        = wb,
+    alignment = center.align,
+    fill      = super.header.background.2,
+    font      = super.header.font
   )
   
   subcolumn.background.main <- Fill(
@@ -803,7 +843,7 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
   # Create first Excel sheet called META containing the report meta-data
   meta.sheet <- createSheet(wb, "META")
   setColumnWidth(meta.sheet, 1, kWideColumn)     # Meta-data key
-  setColumnWidth(meta.sheet, 2, kLargeColumn)   # Meta-data value
+  setColumnWidth(meta.sheet, 2, kLargeColumn)    # Meta-data value
   
   meta.df <- data.frame(row.names = str_to_title(names(metadata)))
   meta.df$value <- metadata
@@ -837,6 +877,37 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
   setColumnWidth(trial.sheet, 1, kWideColumn)              # District + HF
   setColumnWidth(trial.sheet, 2:num.cols, kNormalColumn)   # Indicators
   setColumnWidth(trial.sheet, num.cols + 1, kLargeColumn)  # Comments
+  
+  # Combine cells for the two table super-headers which indicate the source
+  # where each indicator comes from and create them
+  row <- createRow(trial.sheet, kStartRow - 1)
+  log.super.header <- createCell(
+    row      = row, 
+    colIndex = kStartColumn + 1
+  )
+  crf.super.header <- createCell(
+    row      = row, 
+    colIndex = kStartColumn + kNumberOfLogIndicators + 1
+  )
+  setCellValue(log.super.header[[1]], kSuperHeaders[1])
+  setCellValue(crf.super.header[[1]], kSuperHeaders[2])
+  setCellStyle(log.super.header[[1]], super.header.1)
+  setCellStyle(crf.super.header[[1]], super.header.2)
+  
+  addMergedRegion(  # Screening log indicators
+    sheet       = trial.sheet, 
+    startRow    = kStartRow - 1, 
+    endRow      = kStartRow - 1,
+    startColumn = kStartColumn + 1,
+    endColumn   = kStartColumn + kNumberOfLogIndicators
+  )
+  addMergedRegion(  # eCRF indicators
+    sheet       = trial.sheet, 
+    startRow    = kStartRow - 1, 
+    endRow      = kStartRow - 1,
+    startColumn = kStartColumn + kNumberOfLogIndicators + 1,
+    endColumn   = kStartColumn + ncol(general.progress)
+  )
   
   # Add ICARIA TRIAL general progress table
   addDataFrame(
