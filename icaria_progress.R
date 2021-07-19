@@ -617,9 +617,13 @@ PreVisualizationProcess <- function(df, columns.remove.if.zero) {
 CreateExcelReport <- function(metadata, general.progress, cohort.progress, 
                               time.series, health.facilities) {
   
-  # Positions
+  # Positions in spreadsheet
   kStartColumn <- 1
   kStartRow    <- 3
+  
+  # Positions in data frame
+  kICFLogColumn <- 6
+  kICFeCRFColumn <- 7
   
   # Sizes
   kNarrowColumn <- 9
@@ -639,6 +643,7 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
   kHEXGray          <- "#E7E6E6"
   kHEXYellowLight   <- "#FFF2CC"
   kHEXYellowDark    <- "#BF8F00"
+  kHEXRed           <- "#FC0000"
   kINDWhite         <- 9
   
   # Set districts and health facility names
@@ -786,6 +791,15 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
     fill = totals.background
   )
   
+  coherence.font <- Font(
+    wb    = wb,
+    color = kHEXRed
+  )
+  coherence <- CellStyle(
+    wb   = wb,
+    font = coherence.font
+  )
+  
   # Create first Excel sheet called META containing the report meta-data
   meta.sheet <- createSheet(wb, "META")
   setColumnWidth(meta.sheet, 1, kWideColumn)     # Meta-data key
@@ -872,6 +886,21 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
     colnamesStyle = table.header + left.align,
     colStyle = list('1' = table.comments)
   )
+  
+  # Highlight ICF cells when screening log and eCRF does not match
+  for (i in 1:nrow(general.progress[-general.last.row, ])) {
+    if (general.progress[i, kICFLogColumn] != 
+        general.progress[i, kICFeCRFColumn]) {
+      row <- getRows(trial.sheet, i + kStartRow)
+      
+      # Values
+      cells <- getCells(row, kStartColumn + c(kICFLogColumn, kICFeCRFColumn))
+      for (cell in cells) {
+        setCellStyle(cell, coherence) 
+      }
+      
+    }
+  }
   
   # Create third Excel sheet called COHORT containing the COHORT general 
   # progress by Health Facility
