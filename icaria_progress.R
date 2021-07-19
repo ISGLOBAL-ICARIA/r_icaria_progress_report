@@ -478,7 +478,6 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
   
   # TODO: Implement precision feature. Right now, only weekly prescion is
   #       coded.
-  
   time.series <- data.frame()
   
   # Ordered variables to be visualized in the progress report
@@ -562,7 +561,7 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
                          'mig_origin_hf_tonkolili')
     hf.data$mig_origin_hf <- rowSums(hf.data[, mig_origin_cols], na.rm = T)
     point['n_out_mig'] <- CountNumberOfResponses(
-      data = hf.data[which(hf.data$mig_date < time.point & 
+      data = hf.data[which(hf.data$mig_reported_date < time.point & 
                              hf.data$mig_origin_hf == hf.id), ],
       var  = "migration_complete",
       val  = 2,
@@ -577,7 +576,7 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
     hf.data$mig_destination_hf <- rowSums(hf.data[, mig_destination_cols], 
                                           na.rm = T)
     point['n_in_mig'] <- CountNumberOfResponses(
-      data = hf.data[which(hf.data$mig_date < time.point & 
+      data = hf.data[which(hf.data$mig_reported_date < time.point & 
                              hf.data$mig_destination_hf == hf.id), ],
       var  = "migration_complete",
       val  = 2,
