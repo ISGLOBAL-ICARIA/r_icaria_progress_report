@@ -41,10 +41,10 @@ kCOHORTEvents <- c(
   'mrv_2__15_months_arm_1'     # MRV 2 - 15 months
 )
 
-ReadData <- function(api.url, api.token) {
+ReadData <- function(api.url, api.token, variables = NULL) {
   #browser()
   rcon <- redcapConnection(api.url, api.token)
-  data <- exportRecords(rcon, factors = F, labels = F)
+  data <- exportRecords(rcon, factors = F, labels = F, fields = variables)
 }
 
 ExportDataAllHealthFacilities <- function(redcap.api.url, redcap.tokens) {
@@ -65,7 +65,11 @@ ExportDataAllHealthFacilities <- function(redcap.api.url, redcap.tokens) {
     #browser()
     if (hf != "profile" & hf != "cohort") {
       print(paste("Extracting data from", hf))
+      
+      # TODO: The set of variables to be stracted from REDCap projects should be
+      #       predifined in order to improve efficiency
       hf.data <- ReadData(redcap.api.url, redcap.tokens[[hf]])
+      
       hf.data <- cbind(hf = hf, hf.data)
       data <- rbind(data, hf.data)
     }
@@ -365,7 +369,57 @@ SummarizeCRFData <- function(hf.list, data) {
   # Aggregated columns: n_wdw
   summary$n_wdw <- summary$wdrawal_reason_1 + summary$wdrawal_reason_2 + 
     summary$wdrawal_reason_3 + summary$wdrawal_reason_88
-
+ 
+  # Apply migrations to summary
+  origin.columns <- c("mig_origin_hf_bombali", 
+                      "mig_origin_hf_port_loko", 
+                      "mig_origin_hf_tonkolili")
+  destination.columns <- c("mig_destination_hf_bombali", 
+                           "mig_destination_hf_port_loko", 
+                           "mig_destination_hf_tonkolili")
+  mig.columns <- c("hf", "record_id", "mig_reported_date", origin.columns, 
+                   destination.columns)
+  migrations <- data[which(data$migration_complete == 2), mig.columns]
+  migrations$origin <- rowSums(migrations[, origin.columns], na.rm = T)
+  migrations$destination <- rowSums(migrations[, destination.columns], 
+                                    na.rm = T)
+  migrations$in_mig <- 
+    as.integer(substring(migrations$hf, 3)) == migrations$destination
+  
+  # TODO: There's no 2nd and 3rd doses yet. Needs to be tested! (20210721)
+  azi.last.2.doses <- data[
+    which(data$redcap_event_name %in% kCRFAZiEvents[2:3] & data$int_azi == 1), 
+    c("hf", "record_id", "redcap_event_name", "int_azi", "int_date")
+  ]
+  migrations <- merge(
+    x     = migrations, 
+    y     = azi.last.2.doses, 
+    by    = c("hf", "record_id"), 
+    all.x = T
+  )
+  
+  # We have always to substract the number of IN Migrations to the following 
+  # summary data frame columns: screening_consent_1 (ICF Signed), eligible_1 
+  # (Randomized) and epipenta1_v0_recru_arm_1_int_azi_1 (AZi/Pbo1)
+  summary$in_mig <- as.vector(table(migrations$hf[migrations$in_mig]))
+  
+  summary$screening_consent_1 <- summary$screening_consent_1 - summary$in_mig
+  summary$eligible_1 <- summary$eligible_1 - summary$in_mig
+  summary$epipenta1_v0_recru_arm_1_int_azi_1 <- 
+    summary$epipenta1_v0_recru_arm_1_int_azi_1 - summary$in_mig 
+  
+  # We have to substract the number of IN Migrations to 
+  # epimvr1_v4_iptisp4_arm_1_int_azi_1 if migration date is after AZi/Pbo2
+  # administration date
+  
+  # TODO: Implement this when the first 2nd AZi/Pbo dose happens (20210721)
+  
+  # We have to substract the number of IN Migrations to 
+  # epimvr2_v6_iptisp6_arm_1_int_azi_1 if migration date is after AZi/Pbo3
+  # administration date
+  
+  # TODO: Implement this when the first 2nd AZi/Pbo dose happens (20210721)
+  
   # Reorder and rename columns to rescpect the progress report table design
   summary <- summary[, ordered.vars]
   colnames(summary) <- var.names
