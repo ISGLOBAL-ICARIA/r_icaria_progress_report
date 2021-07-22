@@ -21,17 +21,31 @@ kCRFNonAZiEvents <- c(
   'epivita_v5_iptisp5_arm_1'   # 8  EPI-VitA V5 IPTi-SP5
 )
 kCRFEvents <- c(
-  kCRFAZiEvents[1],
-  kCRFHHEvent[1],
-  kCRFNonAZiEvents[1],
-  kCRFNonAZiEvents[2],
-  kCRFNonAZiEvents[3],
-  kCRFAZiEvents[2],
-  kCRFHHEvent[2],
-  kCRFNonAZiEvents[4],
-  kCRFAZiEvents[3],
-  kCRFHHEvent[3],
-  kCRFHHEvent[4]
+  kCRFAZiEvents[1],            # EPI-Penta1 V0 Recruit AZi/Pbo1
+  kCRFHHEvent[1],              # HH-After 1st dose of AZi/Pbo
+  kCRFNonAZiEvents[1],         # EPI-Penta2 V1 IPTi-SP1
+  kCRFNonAZiEvents[2],         # EPI-Penta3 V2 IPTi-SP2
+  kCRFNonAZiEvents[3],         # EPI-VitA V3 IPTi-SP3
+  kCRFAZiEvents[2],            # EPI-MVR1 V4 IPTi-SP4 AZi/Pbo2
+  kCRFHHEvent[2],              # HH-After 2nd dose of AZi/Pbo
+  kCRFNonAZiEvents[4],         # EPI-VitA V5 IPTi-SP5
+  kCRFAZiEvents[3],            # EPI-MVR2 V6 IPTi-SP6 AZi/Pbo3
+  kCRFHHEvent[3],              # HH-After 3rd dose of AZi/Pbo
+  kCRFHHEvent[4]               # HH-At 18th month of age
+)
+
+kEventsDateVars <- c(
+  'screening_date',            # EPI-Penta1 V0 Recruit AZi/Pbo1
+  'hh_date',                   # HH-After 1st dose of AZi/Pbo
+  'int_date',                  # EPI-Penta2 V1 IPTi-SP1
+  'int_date',                  # EPI-Penta3 V2 IPTi-SP2
+  'int_date',                  # EPI-VitA V3 IPTi-SP3
+  'int_date',                  # EPI-MVR1 V4 IPTi-SP4 AZi/Pbo2
+  'hh_date',                   # HH-After 2nd dose of AZi/Pbo
+  'int_date',                  # EPI-VitA V5 IPTi-SP5
+  'int_date',                  # EPI-MVR2 V6 IPTi-SP6 AZi/Pbo3
+  'hh_date',                   # HH-After 3rd dose of AZi/Pbo
+  'hh_date'                    # HH-At 18th month of age
 )
 
 kCOHORTEvents <- c(
@@ -293,29 +307,33 @@ GetMigrations <- function(data) {
   migrations$in_mig <- 
     as.integer(substring(migrations$hf, 3)) == migrations$destination
   
-  # Include the date of the second dose of AZi/Pbo in order to know when the 
-  # migration occurred. If it was either between AZi/Pbo1 and AZi/Pbo2 OR
-  # between AZi/Pbo2 and AZi/Pbo3.
+  # Include the dates all the events after recruitment toknow when the 
+  # migration occurred (between which two events). 
   # TODO: There's no 2nd doses yet. Needs to be tested! (20210721)
-  azi.2nd.dose <- data[
-    which(data$redcap_event_name == kCRFAZiEvents[2] & data$int_azi == 1), 
-    c("hf", "record_id", "redcap_event_name", "int_azi", "int_date")
-  ]
-  migrations <- merge(
-    x     = migrations, 
-    y     = azi.2nd.dose, 
-    by    = c("hf", "record_id"), 
-    all.x = T
-  )
+  merge.columns <- c("hf", "record_id")
+  for (i in 1:length(kCRFEvents)) {
+    event.date <- data[
+      which(data$redcap_event_name == kCRFEvents[i]),
+      c(merge.columns, kEventsDateVars[i])
+    ]
+    
+    date.column <- kCRFEvents[i]
+    colnames(event.date)[3] <- date.column
+    
+    event.date <- event.date[which(!is.na(event.date[date.column])), ]
+    
+    migrations <- merge(
+      x     = migrations,
+      y     = event.date,
+      by    = merge.columns,
+      all.x = T
+    )
+  }
   
   # Filter non-relevant columns
   relevant.cols <- c("hf", "record_id", "mig_reported_date", "origin", 
-                     "destination", "in_mig", "int_date")
+                     "destination", "in_mig", kCRFEvents)
   migrations <- migrations[, relevant.cols]
-  
-  # Rename columns
-  colnames(migrations) <- c("hf", "record_id", "mig_date", "origin", 
-                            "destination", "in_mig", "azi2_date")
   
   return(migrations)
 }
@@ -686,6 +704,27 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
       val  = 2,
       by.hf = F
     )
+    
+    # Apply migrations to the series point
+    migrations <- GetMigrations(hf.data)
+    if (nrow(migrations) > 0) {
+      # We have always to substract the number of IN Migrations to the indicator
+      # n_random (Randomized)
+      point$n_random <- point$n_random - point$n_in_mig
+      
+      # Check where the IN migration occurred and substract in the events where
+      # the data collection was done in the previous health facility. I.e. 
+      # substract when migration date is after event date
+      for (event in kCRFEvents) {
+        # Compute the number of IN migrations that occurred after the event date
+        filter <- migrations$mig_reported_date < time.point & 
+          migrations$in_mig & migrations$mig_reported_date > migrations[[event]]
+        migrations.number <- nrow(migrations[which(filter), ])
+        
+        # Substract this number as this activity occurred in the previous HF
+        point[event] <- point[[event]] - migrations.number
+      }
+    }
     
     time.series <- rbind(time.series, point, stringsAsFactors = F)
     time.point <- NextWeekDay(time.point + 1, week.day)
