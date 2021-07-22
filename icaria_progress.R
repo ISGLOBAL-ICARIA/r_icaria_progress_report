@@ -246,6 +246,80 @@ CountNumberOfResponses <- function(data, var, val, event = NULL, by.hf = T) {
   return(col)
 }
 
+GetMigrations <- function(data) {
+  # Compute and returns a data frame with one row per participant migration
+  # event. A migration can be an OUT migration, when the participant is leaving
+  # a health facility catchment area or an IN migration, when the participant
+  # is coming to a different catchment area in which s/he was recruited. If a
+  # participant is moving form one ICARIA health facility to another, in this
+  # case s/he will have two rows here, one OUT migration and one IN migration.
+  # This data frame is composed by the following columns:
+  #   (1) hf: String representing the ICARIA HF code.
+  #   (2) record_id: Integer representing the REDCap record id of the migrated
+  #                  participant.
+  #   (3) mig_date:  Date of the migration.
+  #   (4) origin:      Integer representing the ID of the origin HF.
+  #   (5) destination: Integer representing the ID of the destination HF.
+  #   (6) in_mig:      Boolean indicating whether or not this is an IN 
+  #                    migration.
+  #   (7) azi2_date:   Date of the second (middle) AZi/Pbo dose.
+  #
+  # Args:
+  #   data:    Data frame containing ALL Health Facility data sets extracted 
+  #            from the ICARIA REDCap projects.
+  # 
+  # Returns:
+  #   Data frame with one row per migration.
+  
+  # Prepare list of variables to be extracted from the project data frame
+  origin.prefix <- "mig_origin_hf_"
+  destination.prefix <- "mig_destination_hf_"
+  districts <- c("bombali", "port_loko", "tonkolili")
+  origin.columns <- paste0(origin.prefix, districts)
+  destination.columns <- paste0(destination.prefix, districts)
+  mig.columns <- c("hf", "record_id", "mig_reported_date", origin.columns, 
+                   destination.columns)
+  
+  # Extract migrations variables from the project data frame
+  migrations <- data[which(data$migration_complete == 2), mig.columns]
+  
+  # Collapse the origin and destination of the migration in just two columns
+  # independently of the district
+  migrations$origin <- rowSums(migrations[, origin.columns], na.rm = T)
+  migrations$destination <- rowSums(migrations[, destination.columns], 
+                                    na.rm = T)
+  
+  # Compute if each migration is an IN or OUT migration 
+  migrations$in_mig <- 
+    as.integer(substring(migrations$hf, 3)) == migrations$destination
+  
+  # Include the date of the second dose of AZi/Pbo in order to know when the 
+  # migration occurred. If it was either between AZi/Pbo1 and AZi/Pbo2 OR
+  # between AZi/Pbo2 and AZi/Pbo3.
+  # TODO: There's no 2nd doses yet. Needs to be tested! (20210721)
+  azi.2nd.dose <- data[
+    which(data$redcap_event_name == kCRFAZiEvents[2] & data$int_azi == 1), 
+    c("hf", "record_id", "redcap_event_name", "int_azi", "int_date")
+  ]
+  migrations <- merge(
+    x     = migrations, 
+    y     = azi.2nd.dose, 
+    by    = c("hf", "record_id"), 
+    all.x = T
+  )
+  
+  # Filter non-relevant columns
+  relevant.cols <- c("hf", "record_id", "mig_reported_date", "origin", 
+                     "destination", "in_mig", "int_date")
+  migrations <- migrations[, relevant.cols]
+  
+  # Rename columns
+  colnames(migrations) <- c("hf", "record_id", "mig_date", "origin", 
+                            "destination", "in_mig", "azi2_date")
+  
+  return(migrations)
+}
+
 SummarizeCRFData <- function(hf.list, data) {
   # Compute and returns the sum of the recruitment progress variables by health 
   # facility. These variables are:
@@ -371,32 +445,8 @@ SummarizeCRFData <- function(hf.list, data) {
     summary$wdrawal_reason_3 + summary$wdrawal_reason_88
  
   # Apply migrations to summary
-  origin.columns <- c("mig_origin_hf_bombali", 
-                      "mig_origin_hf_port_loko", 
-                      "mig_origin_hf_tonkolili")
-  destination.columns <- c("mig_destination_hf_bombali", 
-                           "mig_destination_hf_port_loko", 
-                           "mig_destination_hf_tonkolili")
-  mig.columns <- c("hf", "record_id", "mig_reported_date", origin.columns, 
-                   destination.columns)
-  migrations <- data[which(data$migration_complete == 2), mig.columns]
-  migrations$origin <- rowSums(migrations[, origin.columns], na.rm = T)
-  migrations$destination <- rowSums(migrations[, destination.columns], 
-                                    na.rm = T)
-  migrations$in_mig <- 
-    as.integer(substring(migrations$hf, 3)) == migrations$destination
-  
-  # TODO: There's no 2nd and 3rd doses yet. Needs to be tested! (20210721)
-  azi.last.2.doses <- data[
-    which(data$redcap_event_name %in% kCRFAZiEvents[2:3] & data$int_azi == 1), 
-    c("hf", "record_id", "redcap_event_name", "int_azi", "int_date")
-  ]
-  migrations <- merge(
-    x     = migrations, 
-    y     = azi.last.2.doses, 
-    by    = c("hf", "record_id"), 
-    all.x = T
-  )
+  browser()
+  migrations <- GetMigrations(data)
   
   # We have always to substract the number of IN Migrations to the following 
   # summary data frame columns: screening_consent_1 (ICF Signed), eligible_1 
