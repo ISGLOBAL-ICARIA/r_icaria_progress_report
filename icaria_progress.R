@@ -463,30 +463,31 @@ SummarizeCRFData <- function(hf.list, data) {
     summary$wdrawal_reason_3 + summary$wdrawal_reason_88
  
   # Apply migrations to summary
-  browser()
   migrations <- GetMigrations(data)
-  
+
   # We have always to substract the number of IN Migrations to the following 
-  # summary data frame columns: screening_consent_1 (ICF Signed), eligible_1 
-  # (Randomized) and epipenta1_v0_recru_arm_1_int_azi_1 (AZi/Pbo1)
+  # summary data frame columns: screening_consent_1 (ICF Signed) and eligible_1 
+  # (Randomized)
   summary$in_mig <- as.vector(table(migrations$hf[migrations$in_mig]))
-  
   summary$screening_consent_1 <- summary$screening_consent_1 - summary$in_mig
   summary$eligible_1 <- summary$eligible_1 - summary$in_mig
-  summary$epipenta1_v0_recru_arm_1_int_azi_1 <- 
-    summary$epipenta1_v0_recru_arm_1_int_azi_1 - summary$in_mig 
   
-  # We have to substract the number of IN Migrations to 
-  # epimvr1_v4_iptisp4_arm_1_int_azi_1 if migration date is after AZi/Pbo2
-  # administration date
-  
-  # TODO: Implement this when the first 2nd AZi/Pbo dose happens (20210721)
-  
-  # We have to substract the number of IN Migrations to 
-  # epimvr2_v6_iptisp6_arm_1_int_azi_1 if migration date is after AZi/Pbo3
-  # administration date
-  
-  # TODO: Implement this when the first 2nd AZi/Pbo dose happens (20210721)
+  # Check when the IN migrations occurred and substract in the AZi/Pbo events 
+  # where the data collection was done in the previous health facility. I.e. 
+  # substract when migration date is after event date
+  for (azi.event in kCRFAZiEvents) {
+    # Compute the number of IN migrations per HF that occurred after the event 
+    # date
+    filter <- migrations$in_mig & 
+      migrations$mig_reported_date > migrations[[azi.event]]
+    mig.after.event <- migrations[which(filter), ]
+    summary$in_mig <- 
+      as.vector(table(mig.after.event$hf[mig.after.event$in_mig]))
+    
+    # Substract this number as this activity occurred in the previous HF
+    azi.col.name <- paste0(azi.event, "_int_azi_1")
+    summary[azi.col.name] <- summary[[azi.col.name]] - summary$in_mig
+  }
   
   # Reorder and rename columns to rescpect the progress report table design
   summary <- summary[, ordered.vars]
@@ -712,7 +713,7 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
       # n_random (Randomized)
       point$n_random <- point$n_random - point$n_in_mig
       
-      # Check where the IN migration occurred and substract in the events where
+      # Check when the IN migration occurred and substract in the events where
       # the data collection was done in the previous health facility. I.e. 
       # substract when migration date is after event date
       for (event in kCRFEvents) {
