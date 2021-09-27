@@ -103,7 +103,8 @@ for (hf.id in row.names(hfs[which(hfs$trial), ])) {
   time.series[[hf.id]] <- GetHealthFacilityTimeSeries(
     hf.id       = hf.id, 
     hf.data     = data[which(data$hf == hf), ],
-    report.date = report.date
+    report.date = report.date,
+    profile     = profile
   )
 }
 

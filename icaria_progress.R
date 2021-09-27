@@ -566,7 +566,7 @@ NextWeekDay <- function(date, week.day) {
 }
 
 GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date, 
-                                        precision = "w") {
+                                        precision = "w", profile = NULL) {
   # Compute and returns the status of the recruitment progress variables in a 
   # time series fashion for concrete ICARIA Health Facility. These variables 
   # are:
@@ -601,14 +601,22 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
   
   # TODO: Implement precision feature. Right now, only weekly prescion is
   #       coded.
+  
   time.series <- data.frame()
   
   # Ordered variables to be visualized in the progress report
-  ordered.vars <- c(c('date', 'n_random', 'n_in_mig', 'n_out_mig'), kCRFEvents, 
-                    c('n_wdw', 'n_deaths'))
+  profile.vars <- c('n_penta1', 'n_underweight', 'n_over_age', 'n_consent')
+  ordered.vars <- c(
+    c('date'), 
+    profile.vars, 
+    c('n_random', 'n_in_mig', 'n_out_mig'), 
+    kCRFEvents, 
+    c('n_wdw', 'n_deaths')
+  )
   
   # Variable names
-  var.names <- c('date', 'n_random', 'n_in_mig', 'n_out_mig', 'n_azi1', 'n_hh1',
+  var.names <- c('date', 'n_penta1', 'n_underweight', 'n_over_age', 'n_consent', 
+                 'n_random', 'n_in_mig', 'n_out_mig', 'n_azi1', 'n_hh1',
                  'n_penta2', 'n_penta3', 'n_vit_a1', 'n_azi2', 'n_hh2', 
                  'n_vit_a2', 'n_azi3', 'n_hh3', 'n_end_fu', 'n_wdw', 'n_deaths')
   
@@ -616,10 +624,30 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
   start.date <- min(hf.data$screening_date, na.rm = T)
   time.point <- NextWeekDay(start.date, week.day) 
   
+  # Collapse HF IDs in the hf column no matter in which district the HF is and
+  # keep records of the current HF
+  if (!is.null(profile)) {
+    profile$hf <- rowSums(
+      x     = profile[, c("hf_bombali", "hf_tonkolili", "hf_port_loko")], 
+      na.rm = T
+    )
+    
+    profile <- profile[which(profile$hf == hf.id), ]
+  }
+  
   while (time.point <= report.date) {
     point <- list()
     
     point['date'] <- as.character.Date(time.point)
+    
+    # If we have profile data, compute pre-screening & screening indicators
+    if (!is.null(profile)) {
+      for (var in profile.vars)
+      point[var] = sum(
+        profile[which(profile$report_date < time.point), c(var)], 
+        na.rm = T
+      )
+    }
     
     # Randomized participants
     point['n_random'] <- CountNumberOfResponses(
@@ -1199,7 +1227,8 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
     series$date <- NULL
     
     # Set column names
-    colnames(series) <- c("Randomized", "IN Migrated", "OUT Migrated", 
+    colnames(series) <- c("Penta1", "Underweight", "Over Age", "ICF Signed", 
+                          "Randomized", "IN Migrated", "OUT Migrated", 
                           "Penta1-AZi/Pbo", "HH-Visit1", "Penta2", "Penta3", 
                           "VitA", "MVR1-AZi/Pbo", "HH-Visit2", "VitA", 
                           "MVR2-AZi/Pbo", "HH-Visit3", "HH-Visit END F/U", 
