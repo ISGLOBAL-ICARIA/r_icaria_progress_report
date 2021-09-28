@@ -8,6 +8,7 @@ output:
 source("icaria_progress.R")
 source("tokens.R")
 
+# Define Excel progress report file name
 kExcelReportFilename <- "icaria_progress_report"
 kExcelVersionFormat <- "%Y%m%d"
 kExcelExtension <- ".xlsx"
@@ -30,6 +31,11 @@ report.metadata <- list(
   author      = "Máximo Ramírez Robles",
   link        = "https://github.com/maxramirez84/r_icaria_progress_report"
 )
+
+# Define project characteristics
+sample.size <- 20560
+monthly.target <- 500
+weeks.per.month <- 4.2857
 
 # Define set of health facilities
 hfs <- data.frame(
@@ -124,7 +130,7 @@ CreateExcelReport(
 )
 
 # Follo-up of Non-compliants
-View(data[which(startsWith(data$child_fu_status, 'NC@')), c('hf', 'study_number', 'child_fu_status')])
+# View(data[which(startsWith(data$child_fu_status, 'NC@')), c('hf', 'study_number', 'child_fu_status')])
 ```
 
 ```{r out.width="30px", echo=FALSE}
@@ -132,4 +138,78 @@ knitr::include_graphics("github_icon.png")
 ```
 [Report GitHub Repository](https://github.com/maxramirez84/r_icaria_progress_report)
 
-## Trial Health Facilities Status
+---
+```{r overal.figures, include=FALSE}
+enroled <- sum(trial.progress$n_random)
+progress <- round((sum(trial.progress$n_random) / sample.size) * 100)
+
+weekly.target <- round(monthly.target / weeks.per.month)
+
+dashboard <- time.series[[1]][c('date', 'n_random')]
+for (i in 2:length(time.series)) {
+  dashboard <- merge(
+    x   = dashboard, 
+    y   = time.series[[i]][c('date', 'n_random')], 
+    by  = 'date', 
+    all = T,
+    suffixes = c(i-1, i)
+  )
+}
+colnames(dashboard)[2:ncol(dashboard)] <- hfs$code[which(hfs$trial)]
+
+dashboard$total <- rowSums(dashboard[2:ncol(dashboard)], na.rm = T)
+
+points <- nrow(dashboard)
+dashboard$by.week <- NA
+dashboard$by.week[1] <- dashboard$total[1]
+dashboard$by.week[2:points] <- dashboard$total[2:points] - 
+  dashboard$total[1:(points - 1)]
+
+dashboard$avg.4w <- NA
+for (i in 4:points) {
+  dashboard$avg.4w[i] <- round(mean(dashboard$by.week[i:(i-3)]))
+}
+recruit.rate <- dashboard$avg.4w[points]
+rate.diff <- recruit.rate - dashboard$avg.4w[points - 1]
+
+rate.diff.style <- ""
+rate.diff.trend <- "Same Rate"
+if (rate.diff < 0) {
+  rate.diff.style <- "decrease"
+  rate.diff.trend <- "less"
+} else if (rate.diff > 0) {
+  rate.diff.style <- "green-target"
+  rate.diff.trend <- "more"
+}
+rate.diff.word <- ""
+if (rate.diff != 0) {
+  rate.diff.word <- str_to_title(as.english(abs(rate.diff)))
+}
+
+expected.end <- as.Date(report.date) + ((sample.size - enroled) / recruit.rate) * 7
+expected.end.string <- str_to_title(paste0(
+  format(expected.end, '%b'), '. ', 
+  format(expected.end, '%d'), 
+  str_sub(ordinal(format(expected.end, '%d')), -2), ' ',
+  format(expected.end, '%Y')
+))
+```
+<div class="col-1-3 text-left">
+  <div class="big-number">`r  progress`%</div>
+  <div class="small-number">`r format(enroled, big.mark = '.')` / `r format(sample.size, big.mark = '.')`</div>
+  <div class="fig-title">Total Enroled</div>
+</div>
+
+<div class="col-1-3 text-center">
+  <div class="medium-number">`r  weekly.target`</div>
+  <div class="fig-title">Weekly Target</div>
+  <div class="fig-subtitle green-target">`r paste(monthly.target, 'month')`</div>
+</div>
+
+<div class="col-1-2 text-right">
+  <div><span class="small-number `r rate.diff.style`">`r  rate.diff`</span><span class="medium-number">`r  recruit.rate`</span></div>
+  <div class="fig-title">Enroled/Week</div>
+  <div>Average Rate last 4 weeks</div>
+  <div class="`r rate.diff.style`">`r paste(rate.diff.word, rate.diff.trend, 'than the previous period')`</div>
+  <div>Considering this rate, we'll finish on <span class="expected-end">`r expected.end.string`</span></div>
+</div>
