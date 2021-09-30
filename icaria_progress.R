@@ -90,6 +90,9 @@ ExportDataAllHealthFacilities <- function(redcap.api.url, redcap.tokens) {
     }
   }
   
+  # In order to count data by HF (table), we need to encode HF column as factor
+  data$hf <- as.factor(data$hf)
+  
   return(data)
 }
 
