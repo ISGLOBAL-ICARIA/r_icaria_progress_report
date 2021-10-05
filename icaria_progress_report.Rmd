@@ -15,6 +15,7 @@ kExcelExtension <- ".xlsx"
 
 Sys.setlocale(locale = "en_US.UTF-8")
 report.date <- Sys.time()
+report.date.format <- formatReportDate(report.date)
 excel.report.filename <- paste0(
   kExcelReportFilename, 
   "_", 
@@ -27,7 +28,7 @@ report.metadata <- list(
   name        = "ICARIA Progress Report",
   description = "Progress indicators for the ICARIA Clinical Trial and ancillary studies",
   version     = "1.0",
-  date        = format(report.date, format = "%Y-%m-%d %H:%M"),
+  date        = report.date.format,
   filename    = excel.report.filename,
   author      = "Máximo Ramírez Robles",
   link        = "https://github.com/maxramirez84/r_icaria_progress_report"
@@ -80,9 +81,9 @@ date.filter <- "2021-04-29 10:19:27"
 ```
 
 ---
-title: "ICARIA Progress Report"
-author: "Máximo Ramírez Robles"
-date: `r report.date`
+title: "ICARIA Progress Dashboard"
+author: "`r report.metadata$author`"
+date: "`r paste('Reporting date:', report.metadata$date)`"
 ---
 
 ```{r setup, include=FALSE}
@@ -160,18 +161,42 @@ for (i in 2:length(time.series)) {
 }
 colnames(dashboard)[2:ncol(dashboard)] <- hfs$code[which(hfs$trial)]
 
-dashboard$total <- rowSums(dashboard[2:ncol(dashboard)], na.rm = T)
+dashboard$enroled <- rowSums(dashboard[2:ncol(dashboard)], na.rm = T)
 
 points <- nrow(dashboard)
 dashboard$by.week <- NA
-dashboard$by.week[1] <- dashboard$total[1]
-dashboard$by.week[2:points] <- dashboard$total[2:points] - 
-  dashboard$total[1:(points - 1)]
+dashboard$by.week[1] <- dashboard$enroled[1]
+dashboard$by.week[2:points] <- dashboard$enroled[2:points] - 
+  dashboard$enroled[1:(points - 1)]
 
 dashboard$avg.4w <- NA
 for (i in 4:points) {
   dashboard$avg.4w[i] <- round(mean(dashboard$by.week[i:(i-3)]))
 }
+
+dashboard$expected <- sapply(
+  X   = dashboard$date, 
+  FUN = function(x) { 
+    expectedAtDate(
+      date        = x, 
+      weekly.rate = round(monthly.target / weeks.per.month), 
+      start       = recruitment.start
+    )
+  }
+)
+
+dashboard$N <- sample.size
+
+dashboard$format.date <- sapply(
+  X   = as.Date(dashboard$date),
+  FUN = function(x) {
+    y <- formatReportDate(x)
+    substr(y, 1, nchar(y) - 5)
+  }
+)
+
+dashboard$gap <- dashboard$expected - dashboard$enroled
+
 recruit.rate <- dashboard$avg.4w[points]
 rate.diff <- recruit.rate - dashboard$avg.4w[points - 1]
 
@@ -206,7 +231,7 @@ expected.end.string <- formatReportDate(expected.end)
 </div>
 
 <div class="col-1-2 text-right">
-  <div><span class="small-number `r rate.diff.style`">`r  rate.diff`</span><span class="medium-number">`r  recruit.rate`</span></div>
+  <div><span class="small-number `r rate.diff.style`">`r  if (rate.diff != 0) rate.diff`</span><span class="medium-number">`r  recruit.rate`</span></div>
   <div class="fig-title">Enroled/Week</div>
   <div>Average Rate last 4 weeks</div>
   <div class="`r rate.diff.style`">`r paste(rate.diff.word, rate.diff.trend, 'than the previous period')`</div>
@@ -236,45 +261,70 @@ kNIcons <- 20
 kIconSize <- c(35, 60)
 
 progress.df |>
-e_chart(x, width = "770px", height = "250px") |>
-e_x_axis(show = F) |>
-e_y_axis(show = F, max = sample.size) |>
-e_grid(left = 0, right = 0, top = 0, bottom = 0) |>
-e_color(color = c(kOrange, kGreen, 'black')) |>
-e_pictorial(
-  serie              = y, 
-  symbol             = p, 
-  symbolRepeat       = kNIcons, 
-  symbolBoundingData = sample.size, 
-  symbolSize         = kIconSize, 
-  symbolClip         = T
-) |>
-e_pictorial(
-  serie              = z, 
-  symbol             = p, 
-  symbolRepeat       = kNIcons, 
-  symbolBoundingData = sample.size, 
-  symbolSize         = kIconSize, 
-  symbolClip         = T, 
-  z                  = -1
-) |>
-e_pictorial(
-  serie              = w, 
-  symbol             = p, 
-  symbolRepeat       = kNIcons, 
-  symbolBoundingData = sample.size, 
-  symbolSize         = kIconSize, 
-  z                  = -2
-) |>
-e_legend(show = FALSE) |> 
-e_flip_coords() -> plot
+  e_chart(x, width = "770px", height = "100px") |>
+  e_x_axis(show = F) |>
+  e_y_axis(show = F, max = sample.size) |>
+  e_grid(left = 0, right = 0, top = 0, bottom = 0) |>
+  e_color(color = c(kOrange, kGreen, 'black')) |>
+  e_pictorial(
+    serie              = y, 
+    symbol             = p, 
+    symbolRepeat       = kNIcons, 
+    symbolBoundingData = sample.size, 
+    symbolSize         = kIconSize, 
+    symbolClip         = T
+  ) |>
+  e_pictorial(
+    serie              = z, 
+    symbol             = p, 
+    symbolRepeat       = kNIcons, 
+    symbolBoundingData = sample.size, 
+    symbolSize         = kIconSize, 
+    symbolClip         = T, 
+    z                  = -1
+  ) |>
+  e_pictorial(
+    serie              = w, 
+    symbol             = p, 
+    symbolRepeat       = kNIcons, 
+    symbolBoundingData = sample.size, 
+    symbolSize         = kIconSize, 
+    z                  = -2
+  ) |>
+  e_legend(show = F) |> 
+  e_flip_coords() -> progress.pic.plot
 
 recruitment.start.string <- formatReportDate(recruitment.start)
 recruitment.end.string <- formatReportDate(recruitment.end)
+
+dashboard |>
+  e_chart(format.date) |>
+  e_y_axis(max = sample.size) |>
+  e_grid(left = 60, right = 40, top = 10, bottom = 50) |>
+  e_color(color = c(kGreen, kOrange, 'black', 'red')) |>
+  e_line(expected, endLabel = list(show = T, color = kGreen)) |>
+  e_line(enroled, endLabel = list(show = T, color = kOrange)) |>
+  e_line(gap, lineStyle = list(width = 0), symbol = 'none') |>
+  e_line(
+    serie     = N, 
+    symbol    = 'none', 
+    lineStyle = list(type = 'dashed', width = 1)
+  ) |>
+  e_tooltip(trigger = 'axis') |>
+  e_legend(bottom = 0) -> progress.line.plot
 ```
-<div class="report-block grey-background">
+<div class = "grey-background">
+
+<div class="report-block">
 <div class="col-2-5 text-right"><p><b>Real:</b><br/> `r recruitment.start.string`</p></div>
-<div class="col-2-1">`r plot`</div>
+<div class="col-2-1">`r progress.pic.plot`</div>
 <div class="col-2-5 text-left"><p><b>Plan:</b><br/> `r recruitment.end.string`</p></div>
 </div>
+
+<div class="report-block">
+<p class="chart-title">Overall Enrolment Progress</p>
+<p class="char-subtitle">All ICARIA Health Facilities (14)</p>
+`r progress.line.plot`
+</div>
+
 Continue ...
