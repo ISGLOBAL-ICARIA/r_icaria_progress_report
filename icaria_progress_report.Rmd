@@ -13,6 +13,7 @@ kExcelReportFilename <- "icaria_progress_report"
 kExcelVersionFormat <- "%Y%m%d"
 kExcelExtension <- ".xlsx"
 
+Sys.setlocale(locale = "en_US.UTF-8")
 report.date <- Sys.time()
 excel.report.filename <- paste0(
   kExcelReportFilename, 
@@ -36,6 +37,8 @@ report.metadata <- list(
 sample.size <- 20560
 monthly.target <- 500
 weeks.per.month <- 4.2857
+recruitment.start <- as.Date("2021-03-17")
+recruitment.end <- as.Date("2024-08-01")
 
 # Define set of health facilities
 hfs <- data.frame(
@@ -187,13 +190,9 @@ if (rate.diff != 0) {
 }
 
 expected.end <- as.Date(report.date) + ((sample.size - enroled) / recruit.rate) * 7
-expected.end.string <- str_to_title(paste0(
-  format(expected.end, '%b'), '. ', 
-  format(expected.end, '%d'), 
-  str_sub(ordinal(format(expected.end, '%d')), -2), ' ',
-  format(expected.end, '%Y')
-))
+expected.end.string <- formatReportDate(expected.end)
 ```
+<div class="report-block">
 <div class="col-1-3 text-left">
   <div class="big-number">`r  progress`%</div>
   <div class="small-number">`r format(enroled, big.mark = '.')` / `r format(sample.size, big.mark = '.')`</div>
@@ -213,3 +212,69 @@ expected.end.string <- str_to_title(paste0(
   <div class="`r rate.diff.style`">`r paste(rate.diff.word, rate.diff.trend, 'than the previous period')`</div>
   <div>Considering this rate, we'll finish on <span class="expected-end">`r expected.end.string`</span></div>
 </div>
+</div>
+
+```{r progress.bar, include=FALSE}
+progress.icon.path <- "path://M43.52,0c9.46,0,17.13,7.67,17.13,17.13c0,9.46-7.67,17.13-17.13,17.13c-9.46,0-17.13-7.67-17.13-17.13 C26.39,7.67,34.06,0,43.52,0L43.52,0z M25.36,77.83l13.61,13.79l-10.03,10.03l8.04,8.25l2.74,2.81c4.69,6.2-2.34,13.56-8.45,8.45 l-17.84-18.21c-2.7-3.74-3.5-7.8-0.74-12.45L25.36,77.83L25.36,77.83z M61.67,77.83L48.07,91.63l10.03,10.03l-8.04,8.25l-2.74,2.81 c-4.69,6.2,2.34,13.56,8.45,8.45l17.84-18.21c2.7-3.74,3.5-7.8,0.74-12.45L61.67,77.83L61.67,77.83z M84.26,73.29L84.26,73.29 c-2.79,2.01-6.35,1.08-8.72-1.41L61.87,57.55v13.04H25.13v-13L11.5,71.88c-2.37,2.49-5.94,3.42-8.72,1.41l0,0 c-2.79-2.01-3.87-6.33-1.41-8.72l17.95-17.44c2.92-2.84,8.54-9.56,12.33-9.56H55.7c3.55,0,9.05,6.67,12.01,9.56l17.95,17.44 C88.13,66.96,87.04,71.28,84.26,73.29L84.26,73.29z"
+
+expected <- expectedAtDate(
+  date        = report.date, 
+  weekly.rate = round(monthly.target / weeks.per.month), 
+  start       = recruitment.start
+)
+progress.df <- data.frame(
+  'x' = c('Progress'), 
+  'y' = c(enroled), 
+  'z' = c(expected),
+  'w' = c(sample.size),
+  'p' = c(progress.icon.path)
+)
+
+kOrange <- "#FCC000"
+kGreen <- "#70AD47"
+kNIcons <- 20
+kIconSize <- c(35, 60)
+
+progress.df |>
+e_chart(x, width = "770px", height = "250px") |>
+e_x_axis(show = F) |>
+e_y_axis(show = F, max = sample.size) |>
+e_grid(left = 0, right = 0, top = 0, bottom = 0) |>
+e_color(color = c(kOrange, kGreen, 'black')) |>
+e_pictorial(
+  serie              = y, 
+  symbol             = p, 
+  symbolRepeat       = kNIcons, 
+  symbolBoundingData = sample.size, 
+  symbolSize         = kIconSize, 
+  symbolClip         = T
+) |>
+e_pictorial(
+  serie              = z, 
+  symbol             = p, 
+  symbolRepeat       = kNIcons, 
+  symbolBoundingData = sample.size, 
+  symbolSize         = kIconSize, 
+  symbolClip         = T, 
+  z                  = -1
+) |>
+e_pictorial(
+  serie              = w, 
+  symbol             = p, 
+  symbolRepeat       = kNIcons, 
+  symbolBoundingData = sample.size, 
+  symbolSize         = kIconSize, 
+  z                  = -2
+) |>
+e_legend(show = FALSE) |> 
+e_flip_coords() -> plot
+
+recruitment.start.string <- formatReportDate(recruitment.start)
+recruitment.end.string <- formatReportDate(recruitment.end)
+```
+<div class="report-block grey-background">
+<div class="col-2-5 text-right"><p><b>Real:</b><br/> `r recruitment.start.string`</p></div>
+<div class="col-2-1">`r plot`</div>
+<div class="col-2-5 text-left"><p><b>Plan:</b><br/> `r recruitment.end.string`</p></div>
+</div>
+Continue ...

@@ -3,6 +3,7 @@ library(xlsx)
 library(lubridate)
 library(stringr)
 library(english)
+library(echarts4r)
 
 kCRFAZiEvents <- c(
   'epipenta1_v0_recru_arm_1',  # EPI-Penta1 V0 Recruit AZi/Pbo1
@@ -624,9 +625,9 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
                  'n_penta2', 'n_penta3', 'n_vit_a1', 'n_azi2', 'n_hh2', 
                  'n_vit_a2', 'n_azi3', 'n_hh3', 'n_end_fu', 'n_wdw', 'n_deaths')
   
-  week.day <- 2 # First Monday 00:00 after starting
+  kWeekDay <- 2 # Monday 00:00 after starting
   start.date <- min(hf.data$screening_date, na.rm = T)
-  time.point <- NextWeekDay(start.date, week.day) 
+  time.point <- NextWeekDay(start.date, kWeekDay) 
   
   # Collapse HF IDs in the hf column no matter in which district the HF is and
   # keep records of the current HF
@@ -760,7 +761,7 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
     }
     
     time.series <- rbind(time.series, point, stringsAsFactors = F)
-    time.point <- NextWeekDay(time.point + 1, week.day)
+    time.point <- NextWeekDay(time.point + 1, kWeekDay)
   }
   
   # Reorder and rename columns to rescpect the progress report table design
@@ -1271,4 +1272,29 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
   
   # Save Excel Work Book
   saveWorkbook(wb, metadata$filename)
+}
+
+expectedAtDate <- function(date, weekly.rate, start) {
+  #browser()
+  kWeekDay <- 2 # Monday 00:00 after starting
+  expect <- 0
+  until <- as.Date(start)
+  while (until < date) {
+    expect <- expect + weekly.rate
+    until <- NextWeekDay(until + 1, kWeekDay)
+  }
+  
+  expect
+}
+
+formatReportDate <- function(date) {
+  
+  date.string <- str_to_title(paste0(
+    format(date, '%b'), '. ', 
+    as.integer(format(date, '%d')), 
+    str_sub(ordinal(as.integer(format(date, '%d'))), -2), ' ',
+    format(date, '%Y')
+  ))
+  
+  date.string
 }
