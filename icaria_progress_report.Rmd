@@ -314,7 +314,6 @@ dashboard |>
   e_legend(bottom = 0) -> progress.line.plot
 ```
 <div class = "grey-background">
-
 <div class="report-block">
 <div class="col-2-5 text-right"><p><b>Real:</b><br/> `r recruitment.start.string`</p></div>
 <div class="col-2-1">`r progress.pic.plot`</div>
@@ -325,6 +324,15 @@ dashboard |>
 <p class="chart-title">Overall Enrolment Progress</p>
 <p class="char-subtitle">All ICARIA Health Facilities (14)</p>
 `r progress.line.plot`
+</div>
+</div>
+
+<div>
+<p class="legend-title">GENERAL LEGEND</p>
+<ul class="legend-list">
+<li class="green-target">Expected enroled children by week (based on the defined monthly target: 500 enroled/month).</li>
+<li class="orange-enroled">Enroled children; i.e. randomized children with study number (Source ICARIA eCRF).</li>
+</ul>
 </div>
 
 Continue ...

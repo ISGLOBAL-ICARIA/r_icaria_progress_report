@@ -21,12 +21,12 @@
 .col-2-1 {
   float: left;
   width: 770px;
-  height: 150px;
+  height: 100px;
 }
 .col-2-5 {
   float: left;
   width: 70px;
-  height: 150px;
+  height: 100px;
   display: table;
   padding: 5px;
 }
@@ -68,6 +68,10 @@
   color: #70AD47;
 }
 
+.orange-enroled {
+  color: #FCC000;
+}
+
 .decrease {
   color: #FF0000;
 }
@@ -86,4 +90,16 @@
 .char-subtitle {
   color: #7F7F7F;
   text-align: center;
+}
+
+.legend-title {
+  font-weight: bold;
+}
+
+.legend-list {
+  list-style-type: none;
+}
+
+.legend-list li:before {
+  content: "—"
 }
