@@ -1298,3 +1298,18 @@ formatReportDate <- function(date) {
   
   date.string
 }
+
+buildHFProgressBar <- function(series) {
+  
+  kSize = "435px"
+  series |>
+    e_chart(date, width = kSize, height = kSize) |>
+    e_grid(left = 60, right = 40, top = 10, bottom = 30) |>
+    e_color(color = c(kGreen, kOrange)) |>
+    e_line(expected, endLabel = list(show = T, color = kGreen)) |>
+    e_line(enroled, endLabel = list(show = T, color = kOrange)) |>
+    e_tooltip(trigger = 'axis') |>
+    e_legend(show = F) -> hf.line.plot
+  
+  hf.line.plot
+}

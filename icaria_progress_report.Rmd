@@ -71,7 +71,15 @@ hfs <- data.frame(
   
   trial_highlighted  = c(F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F, F),
   
-  cohort_highlighted = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F)
+  cohort_highlighted = c(F, F, F, F, F, F, F, F, T, F, F, F, F, F, F, F, F),
+  
+  recruitment_start = c('2021-05-18', '2021-04-29', '2021-05-19', '2021-06-16',
+                        '2021-05-10', '2021-06-16', NA          , '2021-03-17',
+                        NA          , '2021-04-28', '2021-04-19', '2021-03-29',
+                        '2021-04-23', NA          , '2021-03-19', '2021-06-03',
+                        '2021-07-14'),
+  
+  weekly_target = c(13, 11, 5, 6, 6, 5, NA, 16, NA, 5, 6, 7, 6, NA, 5, 23, 5)
 )
 row.names(hfs) <- c(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17)
 
@@ -184,6 +192,28 @@ dashboard$expected <- sapply(
     )
   }
 )
+
+for (hf in hfs$code[which(hfs$trial)]) {
+  expected.at.hf <- sapply(
+    X   = dashboard$date[which(!is.na(dashboard[hf]))],
+    FUN = function(x) {
+      filter <- which(hfs$code == hf)
+      expectedAtDate(
+        date        = x,
+        weekly.rate = hfs$weekly_target[filter],
+        start       = hfs$recruitment_start[filter]
+      )
+    }
+  )
+  
+  column.name <- paste("exp", hf, sep = ".")
+  to.be.merged <- data.frame(
+    date    = names(expected.at.hf), 
+    exp = expected.at.hf
+  )
+  colnames(to.be.merged) <- c("date", column.name)
+  dashboard <- merge(dashboard, to.be.merged, by = "date", all = T)
+}
 
 dashboard$N <- sample.size
 
@@ -313,7 +343,7 @@ dashboard |>
   e_tooltip(trigger = 'axis') |>
   e_legend(bottom = 0) -> progress.line.plot
 ```
-<div class = "grey-background">
+<div class="grey-background">
 <div class="report-block">
 <div class="col-2-5 text-right"><p><b>Real:</b><br/> `r recruitment.start.string`</p></div>
 <div class="col-2-1">`r progress.pic.plot`</div>
@@ -333,6 +363,63 @@ dashboard |>
 <li class="green-target">Expected enroled children by week (based on the defined monthly target: 500 enroled/month).</li>
 <li class="orange-enroled">Enroled children; i.e. randomized children with study number (Source ICARIA eCRF).</li>
 </ul>
+</div>
+
+```{r port.loko.hfs.progress.bars, include=FALSE}
+hfs.plots <-list()
+for (hf in hfs$code[which(hfs$trial)]) {
+  filter <- which(!is.na(dashboard[hf]))
+  hfs.plots[[hf]] <- buildHFProgressBar(data.frame(
+    date     = dashboard$format.date[filter],
+    expected = dashboard[filter, paste('exp', hf, sep = '.')],
+    enroled  = dashboard[filter, hf]
+  ))
+}
+
+subtitle.label <- "Weekly Target:"
+```
+<div class="grey-background">
+<div class="col-3-1">
+<div class="report-block">
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[1], hfs$name[1])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[1])`</p>
+`r hfs.plots[[1]]`
+</div>
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[2], hfs$name[2])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[2])`</p>
+`r hfs.plots[[2]]`
+</div>
+</div>
+
+<div class="report-block">
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[3], hfs$name[3])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[3])`</p>
+`r hfs.plots[[3]]`
+</div>
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[4], hfs$name[4])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[4])`</p>
+`r hfs.plots[[4]]`
+</div>
+</div>
+
+<div class="report-block">
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[5], hfs$name[5])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[5])`</p>
+`r hfs.plots[[5]]`
+</div>
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[6], hfs$name[6])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[6])`</p>
+`r hfs.plots[[6]]`
+</div>
+</div>
+</div>
+<div class="col-3-5"><p class="district-label">PORT LOKO</p></div>
 </div>
 
 Continue ...
