@@ -378,18 +378,19 @@ for (hf in hfs$code[which(hfs$trial)]) {
 
 subtitle.label <- "Weekly Target:"
 ```
+<!-- Port Loko Health Facilities -->
 <div class="grey-background">
 <div class="col-3-1">
 <div class="report-block">
 <div class="col-3-2">
 <p class="chart-title">`r paste(hfs$code[1], hfs$name[1])`</p>
 <p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[1])`</p>
-`r hfs.plots[[1]]`
+`r hfs.plots[['HF01']]`
 </div>
 <div class="col-3-2">
 <p class="chart-title">`r paste(hfs$code[2], hfs$name[2])`</p>
 <p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[2])`</p>
-`r hfs.plots[[2]]`
+`r hfs.plots[['HF02']]`
 </div>
 </div>
 
@@ -397,12 +398,12 @@ subtitle.label <- "Weekly Target:"
 <div class="col-3-2">
 <p class="chart-title">`r paste(hfs$code[3], hfs$name[3])`</p>
 <p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[3])`</p>
-`r hfs.plots[[3]]`
+`r hfs.plots[['HF03']]`
 </div>
 <div class="col-3-2">
 <p class="chart-title">`r paste(hfs$code[4], hfs$name[4])`</p>
 <p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[4])`</p>
-`r hfs.plots[[4]]`
+`r hfs.plots[['HF04']]`
 </div>
 </div>
 
@@ -410,16 +411,78 @@ subtitle.label <- "Weekly Target:"
 <div class="col-3-2">
 <p class="chart-title">`r paste(hfs$code[5], hfs$name[5])`</p>
 <p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[5])`</p>
-`r hfs.plots[[5]]`
+`r hfs.plots[['HF05']]`
 </div>
 <div class="col-3-2">
 <p class="chart-title">`r paste(hfs$code[6], hfs$name[6])`</p>
 <p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[6])`</p>
-`r hfs.plots[[6]]`
+`r hfs.plots[['HF06']]`
 </div>
 </div>
 </div>
 <div class="col-3-5"><p class="district-label">PORT LOKO</p></div>
 </div>
 
-Continue ...
+<!-- Tonkolili Health Facilities -->
+<div>
+<div class="col-3-1">
+<div class="report-block">
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[8], hfs$name[8])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[8])`</p>
+`r hfs.plots[['HF08']]`
+</div>
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[10], hfs$name[10])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[10])`</p>
+`r hfs.plots[['HF10']]`
+</div>
+</div>
+</div>
+<div class="col-3-5-2"><p class="district-label">TONKOLILI</p></div>
+</div>
+
+<!-- Bombali Health Facilities -->
+<div class="grey-background">
+<div class="col-3-1">
+<div class="report-block">
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[11], hfs$name[11])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[11])`</p>
+`r hfs.plots[['HF11']]`
+</div>
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[12], hfs$name[12])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[12])`</p>
+`r hfs.plots[['HF12']]`
+</div>
+</div>
+
+<div class="report-block">
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[13], hfs$name[13])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[13])`</p>
+`r hfs.plots[['HF13']]`
+</div>
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[15], hfs$name[15])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[15])`</p>
+`r hfs.plots[['HF15']]`
+</div>
+</div>
+
+<div class="report-block">
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[16], hfs$name[16])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[16])`</p>
+`r hfs.plots[['HF16']]`
+</div>
+<div class="col-3-2">
+<p class="chart-title">`r paste(hfs$code[17], hfs$name[17])`</p>
+<p class="char-subtitle">`r paste(subtitle.label, hfs$weekly_target[17])`</p>
+`r hfs.plots[['HF17']]`
+</div>
+</div>
+</div>
+<div class="col-3-5"><p class="district-label">BOMBALI</p></div>
+</div>
