@@ -50,11 +50,14 @@ kEventsDateVars <- c(
   'hh_date'                    # HH-At 18th month of age
 )
 
-kCOHORTEvents <- c(
+kCOHORTIPTiEvents <- c(
   'ipti_1__10_weeks_r_arm_1',  # IPTi 1 - 10 weeks Recruit
   'ipti_2__14_weeks_arm_1',    # IPTi 2 - 14 weeks
-  'ipti_3__9_months_arm_1',    # IPTi 3 - 9 months
-  'mrv_2__15_months_arm_1'     # MRV 2 - 15 months
+  'ipti_3__9_months_arm_1'     # IPTi 3 - 9 months
+)
+kCOHORTNonIPTiEvents <- c(
+  'mrv_2__15_months_arm_1',    # MRV 2 - 15 months
+  'after_mrv_2_arm_1'          # After MRV 2
 )
 
 ReadData <- function(api.url, api.token, variables = NULL) {
@@ -507,10 +510,12 @@ SummarizeCohortData <- function(hf.list, data) {
   #   (1) n_recruited:  Number of children going through the informed consent
   #                     process in which their caretakers do sign the informed 
   #                     content form.
-  #   (2) n_ipti1:      Number children who took the 1st dose of IPTi.
-  #   (3) n_ipti2:      Number children who took the 2nd dose of IPTi.
-  #   (4) n_ipti3:      Number children who took the 3rd dose of IPTi.
-  #   (5) n_mrv2:       Number children who took the 2nd dose of MRV.
+  #   (2) n_ipti1:      Number of children who took the 1st dose of IPTi.
+  #   (3) n_ipti2:      Number of children who took the 2nd dose of IPTi.
+  #   (4) n_ipti3:      Number of children who took the 3rd dose of IPTi.
+  #   (5) n_mrv2:       Number of children who took the 2nd dose of MRV.
+  #   (6) n_after_mrv2: Number of children who was visited for the end of follow
+  #                     up visit.
   #
   # Args:
   #   hf.list: List of ICARIA health facilities IDs (integers) to be summarized.
@@ -522,7 +527,7 @@ SummarizeCohortData <- function(hf.list, data) {
   
   # Variable names
   var.names <- c('hf.list', 'n_recruited', 'n_ipti1', 'n_ipti2', 'n_ipti3', 
-                 'n_mrv2')
+                 'n_mrv2', 'n_after_mrv2')
   
   # Summarize all COHORT variables by health facility
   summary <- data.frame(hf.list)
@@ -532,9 +537,19 @@ SummarizeCohortData <- function(hf.list, data) {
   # study number do we have
   summary['n_recruited'] <- table(data$hf[which(!is.na(data$study_number))])
   
-  # Sumarize events
-  for (event in kCOHORTEvents) {
+  # Summarize IPTi events
+  for (event in kCOHORTIPTiEvents) {
+    # The Vaccination Status DCI is included in all EPI visits in which IPTi is
+    # administered according to the Sierra Leona Immunization Program, although 
+    # it is not administered in all visits (I don't know why - missing U5 card?)
     var <- 'intervention_complete'
+    summary[event] <- CountNumberOfResponses(data, var, 2, event)  
+  }
+  # Summarize NON IPTi events
+  for (event in kCOHORTNonIPTiEvents) {
+    # The Clinical History is included in all EPI visits in which IPTi is not
+    # administered.
+    var <- 'clinical_history_complete'
     summary[event] <- CountNumberOfResponses(data, var, 2, event)  
   }
   
@@ -542,7 +557,7 @@ SummarizeCohortData <- function(hf.list, data) {
   summary$hf.list <- as.character(summary$hf.list)  # Remove factors
   summary <- as.data.frame(lapply(summary, as.numeric))
   
-  # Rename columns to rescpect the progress report table design
+  # Rename columns to respect the progress report table design
   colnames(summary) <- var.names
   
   return(summary)
@@ -855,7 +870,8 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
                                   "Parent Request", "Investigator", "Migration",
                                   "Other", "Deaths")
   
-  colnames(cohort.progress) <- c("Recruited", "IPTi1", "IPTi2", "IPTi3", "MRV2")
+  colnames(cohort.progress) <- c("Recruited", "IPTi1", "IPTi2", "IPTi3", "MRV2",
+                                 "After MRV2")
   
   # Create the totals rows
   total.string <- "Total"

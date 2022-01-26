@@ -27,7 +27,12 @@ excel.report.filename <- paste0(
 report.metadata <- list(
   name        = "ICARIA Progress Report",
   description = "Progress indicators for the ICARIA Clinical Trial and ancillary studies",
-  version     = "1.0",
+  ##############################################################################
+  # v1.1 - Fixed a problem that didn't count MRV2 visits in COHORT. Added a new
+  #        column in the COHORT table: After MRV2.
+  #
+  version     = "1.1",
+  ##############################################################################
   date        = report.date.format,
   filename    = excel.report.filename,
   author      = "Máximo Ramírez Robles",
