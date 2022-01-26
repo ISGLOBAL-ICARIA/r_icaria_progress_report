@@ -377,6 +377,18 @@ for (hf in hfs$code[which(hfs$trial)]) {
 }
 
 subtitle.label <- "Weekly Target:"
+
+# Average (4 weeks) recruitment rate evolution line chart
+dashboard$week.target <- 117
+dashboard |> 
+  e_chart(format.date) |>
+  e_color(color = c('blue', 'red')) |>
+  e_line(avg.4w) |> 
+  e_line(
+    serie     = week.target, 
+    symbol    = 'none', 
+    lineStyle = list(type = 'dashed', width = 1)
+  ) -> avg.recruit.rate.evol
 ```
 <!-- Port Loko Health Facilities -->
 <div class="grey-background">
