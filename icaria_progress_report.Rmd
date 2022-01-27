@@ -30,8 +30,10 @@ report.metadata <- list(
   ##############################################################################
   # v1.1 - Fixed a problem that didn't count MRV2 visits in COHORT. Added a new
   #        column in the COHORT table: After MRV2.
+  # v1.2 - Fixed a bug with the screening log vars in the HF time series. The
+  #        report_date column was being used rather than the screening_date.
   #
-  version     = "1.1",
+  version     = "1.2",
   ##############################################################################
   date        = report.date.format,
   filename    = excel.report.filename,
