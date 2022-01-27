@@ -664,7 +664,7 @@ GetHealthFacilityTimeSeries <- function(hf.id, hf.data, report.date,
     if (!is.null(profile)) {
       for (var in profile.vars)
       point[var] = sum(
-        profile[which(profile$report_date < time.point), c(var)], 
+        profile[which(profile$screening_date < time.point), c(var)], 
         na.rm = T
       )
     }
