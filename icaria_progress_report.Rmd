@@ -372,7 +372,7 @@ dashboard |>
 </ul>
 </div>
 
-```{r port.loko.hfs.progress.bars, include=FALSE}
+```{r hfs.progress.bars, include=FALSE}
 hfs.plots <-list()
 for (hf in hfs$code[which(hfs$trial)]) {
   filter <- which(!is.na(dashboard[hf]))
@@ -384,18 +384,6 @@ for (hf in hfs$code[which(hfs$trial)]) {
 }
 
 subtitle.label <- "Weekly Target:"
-
-# Average (4 weeks) recruitment rate evolution line chart
-dashboard$week.target <- 117
-dashboard |> 
-  e_chart(format.date) |>
-  e_color(color = c('blue', 'red')) |>
-  e_line(avg.4w) |> 
-  e_line(
-    serie     = week.target, 
-    symbol    = 'none', 
-    lineStyle = list(type = 'dashed', width = 1)
-  ) -> avg.recruit.rate.evol
 ```
 <!-- Port Loko Health Facilities -->
 <div class="grey-background">
@@ -504,4 +492,33 @@ dashboard |>
 </div>
 </div>
 <div class="col-3-5"><p class="district-label">BOMBALI</p></div>
+</div>
+
+```{r recruit.rate.evol, include=FALSE}
+# Average (4 weeks) recruitment rate evolution line chart
+dashboard$week.target <- 117
+dashboard |> 
+  e_chart(format.date) |>
+  e_grid(left = 60, right = 40, top = 10, bottom = 50) |>
+  e_color(color = c(kOrange, kGreen)) |>
+  e_line(
+    serie     = avg.4w, 
+    name      = "enrolment rate", 
+    endLabel  = list(show = T, color = kOrange)) |> 
+  e_line(
+    serie     = week.target,
+    name      = "weekly target",
+    symbol    = 'none', 
+    lineStyle = list(type = 'dashed', width = 1),
+    endLabel  = list(show = T, color = kGreen)
+  ) |>
+  e_tooltip(trigger = 'axis') |>
+  e_legend(bottom = 0) -> avg.recruit.rate.evol
+```
+
+<div class="report-block">
+<p class="chart-title">Enrolment Rate Evolution</p>
+<p class="char-subtitle">Enroled/Week: Average Rate last 4 weeks</p>
+`r avg.recruit.rate.evol`
+</div>
 </div>
