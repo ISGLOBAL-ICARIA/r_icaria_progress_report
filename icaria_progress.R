@@ -88,8 +88,20 @@ ExportDataAllHealthFacilities <- function(redcap.api.url, redcap.tokens) {
       # TODO: The set of variables to be stracted from REDCap projects should be
       #       predifined in order to improve efficiency
       hf.data <- ReadData(redcap.api.url, redcap.tokens[[hf]])
-      
-      hf.data <- cbind(hf = hf, hf.data)
+      if (hf == 'HF02.02') {
+        hf_print <- 'HF02'
+      } 
+      else if (hf =='HF01.01') {
+        hf_print <- 'HF01'
+      }
+      else if (hf =='HF16.01') {
+        hf_print <- 'HF16'
+      }
+      else {
+        hf_print <- hf
+        
+      }
+      hf.data <- cbind(hf = hf_print, hf.data)
       data <- rbind(data, hf.data)
     }
   }
