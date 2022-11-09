@@ -1,6 +1,7 @@
 library(redcapAPI)
-library(xlsx)
-library(lubridate)
+#library(xlsx)
+library(openxlsx)
+#library(lubridate)
 library(stringr)
 library(english)
 library(echarts4r)
@@ -88,20 +89,14 @@ ExportDataAllHealthFacilities <- function(redcap.api.url, redcap.tokens) {
       # TODO: The set of variables to be stracted from REDCap projects should be
       #       predifined in order to improve efficiency
       hf.data <- ReadData(redcap.api.url, redcap.tokens[[hf]])
-      if (hf == 'HF02.02') {
-        hf_print <- 'HF02'
-      } 
-      else if (hf =='HF01.01') {
-        hf_print <- 'HF01'
+            if ((substr(hf, 1, 2)  == "HF") & (substr(hf, 5, 5) == ".")) {
+        hf <- substr(hf, 1, 4)
+      } else {
+        hf <-  hf
       }
-      else if (hf =='HF16.01') {
-        hf_print <- 'HF16'
-      }
-      else {
-        hf_print <- hf
-        
-      }
-      hf.data <- cbind(hf = hf_print, hf.data)
+      hf.data <- cbind(hf= hf, hf.data) ########################################################################################################################################
+
+      
       data <- rbind(data, hf.data)
     }
   }
@@ -905,7 +900,7 @@ CreateExcelReport <- function(metadata, general.progress, cohort.progress,
                                               columns.can.be.hidden)
   
   # Create Excel Work Book
-  wb <- createWorkbook(type = "xlsx")
+  wb <- createWorkbook(type = "xlsx")                   ####################################################################
   
   # Workbook styles
   right.align <- Alignment(

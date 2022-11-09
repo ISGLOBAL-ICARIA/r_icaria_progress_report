@@ -5,6 +5,7 @@ output:
 ---
 
 ```{r parameters, include=FALSE}
+
 source("icaria_progress.R")
 source("tokens.R")
 
@@ -107,7 +108,7 @@ knitr::opts_chunk$set(echo = TRUE)
 # Export data from all REDCap projects (one project by health facility)
 data <- ExportDataAllHealthFacilities(kRedcapAPIURL, kRedcapTokens)
 
-# Export data from trial profile (data recorded on the screening log)
+  # Export data from trial profile (data recorded on the screening log)
 profile <- ExportDataTrialProfile(kRedcapAPIURL, kRedcapTokens)
 
 # Export data from the COHORT project (ancillary study)
@@ -119,6 +120,7 @@ trial.progress <- SummarizeData(
   profile = profile, 
   data    = data
 )
+
 
 # Produce one data set by ICARIA Health Facility with the progress time series
 time.series <- list()
